@@ -35,6 +35,14 @@ md("""
 md("""
 ## 0. 准备
 
+**第一次在新机器上跑之前，先在终端里造题库**（repo 根目录下，约 10 分钟）：
+
+```bash
+python make_prior_dump.py --all
+```
+
+造好的题库会算出校验值，并和 Mac 上的对比，结果也会写进报告。不完全一样也能用：GPU 上所有实验都用同一份题库，彼此可比；只是和 Mac 上的结果不能逐数字对照。
+
 `QUICK_TEST = True` 时，所有步骤都用极小的规模（几步训练、1 个 seed），几分钟就能把整个 notebook 跑一遍，用来检查环境。正式跑之前改成 `False`。
 """)
 
@@ -73,8 +81,9 @@ GENERIC_DUMP = "prior_dumps/generic_graph_scm_100k_256x24_seed0.h5"   # training
 FINANCE_DUMP = "prior_dumps/finance_100k_256x24_seed0.h5"
 HELDOUT_DUMPS = {"generic": "prior_dumps/generic_graph_scm_1k_256x24_seed1.h5",  # seed 1: never seen in training
                  "finance": "prior_dumps/finance_1k_256x24_seed1.h5"}
-for path in [GENERIC_DUMP, FINANCE_DUMP, *HELDOUT_DUMPS.values()]:
-    assert os.path.exists(path), f"missing {path}"
+missing = [path for path in [GENERIC_DUMP, FINANCE_DUMP, *HELDOUT_DUMPS.values()] if not os.path.exists(path)]
+if missing:
+    raise FileNotFoundError(f"missing {missing}: in a terminal at the repo root, run  python make_prior_dump.py --all  (about 10 minutes)")
 
 SUITE_DATA = {suite: load_suite(suite) for suite in SUITES}  # read from benchmark/cache, no download
 for suite, datasets in SUITE_DATA.items():
@@ -195,11 +204,14 @@ def git_commit():
     return "unknown"
 
 
+from make_prior_dump import checksum_note
+
 report("0 environment", "\\n".join([
     f"device: {device} {torch.cuda.get_device_name(0) if device == 'cuda' else ''}",
     f"torch {torch.__version__}, python {sys.version.split()[0]}, git commit {git_commit()}, QUICK_TEST {QUICK_TEST}",
     f"pools: {GENERIC_DUMP}, {FINANCE_DUMP}; held-out: {', '.join(HELDOUT_DUMPS.values())}",
     "suites: " + ", ".join(f"{s} {len(d)} datasets" for s, d in SUITE_DATA.items()),
+    *[checksum_note(path) for path in [GENERIC_DUMP, FINANCE_DUMP, *HELDOUT_DUMPS.values()]],
 ]))
 """)
 

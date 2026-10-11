@@ -8,11 +8,17 @@ identical whatever the number of worker processes. Missing values stay NaN: they
 training time, once the train/test split of the batch is known.
 
 Examples:
+    python make_prior_dump.py --all          # the four pools the experiments use, same as on the Mac
     python make_prior_dump.py --prior generic --n_tables 100000
     python make_prior_dump.py --prior finance --n_tables 100000
+
+Each file's content checksum is printed at the end and compared with the Mac pools (MAC_CHECKSUMS).
+Pools regenerated on another machine can differ if torch or numpy draw differently there; experiments
+stay comparable with each other as long as they all use the same pools.
 """
 
 import argparse
+import hashlib
 import os
 import random
 import time
@@ -27,6 +33,33 @@ from priors.mixture import GenericPrior
 
 CHUNK = 1000
 FINTFM_COMMIT = "7c297d02a29c44d16a579d67e7b648cf61a631ad"
+
+# (prior, n_tables, seed): the training pools (seed 0) and the held-out pools for health checks (seed 1)
+ALL_POOLS = [("finance", 100_000, 0), ("generic", 100_000, 0), ("finance", 1000, 1), ("generic", 1000, 1)]
+# content checksums of the pools generated on the Mac on 2026-10-11
+MAC_CHECKSUMS = {
+    "finance_100k_256x24_seed0.h5": "b869733eb779",
+    "generic_graph_scm_100k_256x24_seed0.h5": "0f3423218e96",
+    "finance_1k_256x24_seed1.h5": "eb3e6b2272a2",
+    "generic_graph_scm_1k_256x24_seed1.h5": "011ea0e594e1",
+}
+
+
+def content_checksum(path: str) -> str:
+    """md5 over the tables themselves (X, y, num_features), so HDF5 file metadata does not matter."""
+    digest = hashlib.md5()
+    with h5py.File(path, "r") as f:
+        for lo in range(0, f["X"].shape[0], CHUNK):
+            digest.update(f["X"][lo:lo + CHUNK].tobytes())
+        digest.update(f["y"][:].tobytes())
+        digest.update(f["num_features"][:].tobytes())
+    return digest.hexdigest()[:12]
+
+
+def checksum_note(path: str) -> str:
+    checksum, mac = content_checksum(path), MAC_CHECKSUMS.get(os.path.basename(path))
+    match = "no Mac reference" if mac is None else "identical to the Mac pool" if checksum == mac else f"differs from the Mac pool ({mac})"
+    return f"{os.path.basename(path)}: content checksum {checksum}, {match}"
 
 
 def generate_chunk(job):
@@ -53,9 +86,47 @@ def generate_chunk(job):
     return chunk, X, y, num_features
 
 
+
+def make_dump(prior, n_tables, seed, generic="graph_scm", n_rows=256, max_features=24, workers=8, out_dir="prior_dumps"):
+    name = f"generic_{generic}" if prior == "generic" else "finance"
+    path = os.path.join(out_dir, f"{name}_{n_tables // 1000}k_{n_rows}x{max_features}_seed{seed}.h5")
+    if os.path.exists(path):
+        print(f"exists, not regenerated: {checksum_note(path)}")
+        return path
+    os.makedirs(out_dir, exist_ok=True)
+    n_chunks = -(-n_tables // CHUNK)
+    jobs = [(prior, generic, c, min(CHUNK, n_tables - c * CHUNK), n_rows, max_features, seed) for c in range(n_chunks)]
+
+    start = time.time()
+    with h5py.File(path + ".tmp", "w") as f:
+        X_out = f.create_dataset("X", (n_tables, n_rows, max_features), dtype="float32",
+                                 chunks=(1, n_rows, max_features), compression="lzf")
+        y_out = f.create_dataset("y", (n_tables, n_rows), dtype="int8", chunks=(1, n_rows), compression="lzf")
+        nf_out = f.create_dataset("num_features", (n_tables,), dtype="int32")
+        f.attrs.update({"prior": name, "n_rows": n_rows, "max_features": max_features, "max_classes": 2,
+                        "seed": seed, "chunk": CHUNK, "nan": "missing values kept as NaN, impute at train time"})
+        if prior == "generic":
+            from importlib.metadata import version
+            f.attrs["tabicl_version"] = version("tabicl")
+        else:
+            f.attrs["fintfm_commit"] = FINTFM_COMMIT
+        with Pool(min(workers, n_chunks)) as pool:
+            for done, (chunk, X, y, nf) in enumerate(pool.imap_unordered(generate_chunk, jobs), 1):
+                lo = chunk * CHUNK
+                X_out[lo:lo + len(X)] = X
+                y_out[lo:lo + len(y)] = y
+                nf_out[lo:lo + len(nf)] = nf
+                print(f"{done}/{n_chunks} chunks, {time.time() - start:.0f}s", flush=True)
+    os.replace(path + ".tmp", path)  # only a complete file gets the final name
+    print(f"saved {path} ({os.path.getsize(path) / 2**30:.2f} GB) in {time.time() - start:.0f}s")
+    print(checksum_note(path))
+    return path
+
+
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--prior", choices=["generic", "finance"], required=True)
+    parser.add_argument("--all", action="store_true", help="make the four pools in ALL_POOLS")
+    parser.add_argument("--prior", choices=["generic", "finance"])
     parser.add_argument("--generic", default="graph_scm", help="TabICL prior type when --prior generic")
     parser.add_argument("--n_tables", type=int, default=100_000)
     parser.add_argument("--n_rows", type=int, default=256)
@@ -65,32 +136,10 @@ if __name__ == "__main__":
     parser.add_argument("--out_dir", default="prior_dumps")
     args = parser.parse_args()
 
-    name = f"generic_{args.generic}" if args.prior == "generic" else "finance"
-    path = os.path.join(args.out_dir, f"{name}_{args.n_tables // 1000}k_{args.n_rows}x{args.max_features}_seed{args.seed}.h5")
-    os.makedirs(args.out_dir, exist_ok=True)
-    n_chunks = -(-args.n_tables // CHUNK)
-    jobs = [(args.prior, args.generic, c, min(CHUNK, args.n_tables - c * CHUNK), args.n_rows, args.max_features, args.seed)
-            for c in range(n_chunks)]
-
-    start = time.time()
-    with h5py.File(path + ".tmp", "w") as f:
-        X_out = f.create_dataset("X", (args.n_tables, args.n_rows, args.max_features), dtype="float32",
-                                 chunks=(1, args.n_rows, args.max_features), compression="lzf")
-        y_out = f.create_dataset("y", (args.n_tables, args.n_rows), dtype="int8", chunks=(1, args.n_rows), compression="lzf")
-        nf_out = f.create_dataset("num_features", (args.n_tables,), dtype="int32")
-        f.attrs.update({"prior": name, "n_rows": args.n_rows, "max_features": args.max_features, "max_classes": 2,
-                        "seed": args.seed, "chunk": CHUNK, "nan": "missing values kept as NaN, impute at train time"})
-        if args.prior == "generic":
-            from importlib.metadata import version
-            f.attrs["tabicl_version"] = version("tabicl")
-        else:
-            f.attrs["fintfm_commit"] = FINTFM_COMMIT
-        with Pool(args.workers) as pool:
-            for done, (chunk, X, y, nf) in enumerate(pool.imap_unordered(generate_chunk, jobs), 1):
-                lo = chunk * CHUNK
-                X_out[lo:lo + len(X)] = X
-                y_out[lo:lo + len(y)] = y
-                nf_out[lo:lo + len(nf)] = nf
-                print(f"{done}/{n_chunks} chunks, {time.time() - start:.0f}s", flush=True)
-    os.replace(path + ".tmp", path)  # only a complete file gets the final name
-    print(f"saved {path} ({os.path.getsize(path) / 2**30:.2f} GB) in {time.time() - start:.0f}s")
+    if args.all:
+        for prior, n_tables, seed in ALL_POOLS:
+            make_dump(prior, n_tables, seed, workers=args.workers, out_dir=args.out_dir)
+    elif args.prior:
+        make_dump(args.prior, args.n_tables, args.seed, args.generic, args.n_rows, args.max_features, args.workers, args.out_dir)
+    else:
+        parser.error("give --all or --prior")

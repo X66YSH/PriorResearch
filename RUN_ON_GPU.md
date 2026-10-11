@@ -4,15 +4,16 @@
 
 ## 1. 带过去的东西
 
-整个包解压后就是一个完整的 repo，不需要再联网下载数据：
+一个小 zip（几 MB，可以用邮件发），解压后是一个完整的 repo：
 
-| 内容 | 位置 | 大小 | 说明 |
-|---|---|---|---|
-| 代码和文档 | repo 根目录，含 `.git` | 约 1 MB | 可以在 GPU 机器上继续 commit |
-| 两个题库 | `prior_dumps/*_100k_*.h5` | 2.3 GB | **必须带**：保证和 Mac 上用的是完全相同的题 |
-| 两个小题库（健康检查用） | `prior_dumps/*_1k_*_seed1.h5` | 30 MB | 模型没见过的合成表，notebook 的健康检查用 |
-| 两套考卷 | `benchmark/cache/*.npz` | 1.5 MB | 带上就不用连 OpenML |
-| Mac 上的 seed 0 结果 | `checkpoints/lr1e-3/`、`results/lr1e-3/` | 10 MB | 用来对照 |
+| 内容 | 位置 | 说明 |
+|---|---|---|
+| 代码和文档 | repo 根目录，含 `.git` | 可以在 GPU 机器上继续 commit |
+| 两套考卷 | `benchmark/cache/*.npz` | 带上就不用连 OpenML |
+| Mac 上训好的 r = 0 模型 | `checkpoints/lr1e-3/r0.00_seed0.pth` | notebook 第 1 步用来确认和 Mac 一致 |
+| Mac 上 seed 0 的成绩 | `results/lr1e-3/*.json` | 对照用 |
+
+**题库不在包里**（2.3 GB，邮件发不了），到 GPU 机器上重新造，见第 2b 节。
 
 **没带的：** `.venv/`（要在 GPU 机器上重装）、`300k_150x5_2.h5`（原版 nanoTabPFN 的数据，我们不用）、`TFM_Prior_deck.pptx`、`logs/`。
 
@@ -26,11 +27,34 @@ python -c "import torch; print(torch.__version__, torch.cuda.is_available(), tor
 ```
 最后一行要打印出 `True` 和 GPU 型号。如果是 `False`，按 `requirements-gpu.txt` 开头的注释装 CUDA 版的 torch。
 
+## 2b. 造题库（约 10 分钟，只需一次）
+
+在终端里，repo 根目录下（不要在 notebook 里，造题需要固定 `PYTHONHASHSEED`，脚本会自动处理）：
+
+```bash
+python make_prior_dump.py --all
+```
+
+会造出 4 个文件到 `prior_dumps/`：两个训练题库（各 10 万张）和两个健康检查用的小题库（各 1000 张）。每个文件造完会打印内容校验值，并和 Mac 上的对比：
+
+| 文件 | Mac 上的内容校验值 |
+|---|---|
+| `finance_100k_256x24_seed0.h5` | `b869733eb779` |
+| `generic_graph_scm_100k_256x24_seed0.h5` | `0f3423218e96` |
+| `finance_1k_256x24_seed1.h5` | `eb3e6b2272a2` |
+| `generic_graph_scm_1k_256x24_seed1.h5` | `011ea0e594e1` |
+
+- 显示 "identical to the Mac pool"：和 Mac 上的题完全相同
+- 显示 "differs"：GPU 机器上的 torch / numpy 抽随机数的方式和 Mac 不同。**也能用**：GPU 上的所有实验都用这同一份题库，彼此可比；只是不能和 Mac 上的训练结果逐数字对照
+- 校验结果也会自动写进 notebook 的报告
+- CPU 核多的话可以加 `--workers 16`，造出来的内容不受影响
+
 ## 推荐：用 notebook 一步一步跑
 
 打开 **[rq1_gpu.ipynb](rq1_gpu.ipynb)**，从上往下一个 cell 一个 cell 地跑，下面第 3 到 5 节的事它都包含了：
 
-1. 先把第一个 cell 里的 `QUICK_TEST` 改成 `True`，从头跑一遍（几分钟），确认环境没问题
+0. 先按第 2b 节造好题库
+1. 把第一个 cell 里的 `QUICK_TEST` 改成 `True`，从头跑一遍（几分钟），确认环境没问题
 2. 改回 `False`，正式跑。第 3 步要根据第 2 步的结果手动填学习率和步数
 3. **每一步的结果都会自动写进 `results/gpu_report.txt`**，跑完把这一个文件发回来就行。某一步重跑，只替换那一段
 
