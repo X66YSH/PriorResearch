@@ -9,7 +9,8 @@
 | 内容 | 位置 | 大小 | 说明 |
 |---|---|---|---|
 | 代码和文档 | repo 根目录，含 `.git` | 约 1 MB | 可以在 GPU 机器上继续 commit |
-| 两个题库 | `prior_dumps/*.h5` | 2.3 GB | **必须带**：保证和 Mac 上用的是完全相同的题 |
+| 两个题库 | `prior_dumps/*_100k_*.h5` | 2.3 GB | **必须带**：保证和 Mac 上用的是完全相同的题 |
+| 两个小题库（健康检查用） | `prior_dumps/*_1k_*_seed1.h5` | 30 MB | 模型没见过的合成表，notebook 的健康检查用 |
 | 两套考卷 | `benchmark/cache/*.npz` | 1.5 MB | 带上就不用连 OpenML |
 | Mac 上的 seed 0 结果 | `checkpoints/lr1e-3/`、`results/lr1e-3/` | 10 MB | 用来对照 |
 
@@ -24,6 +25,19 @@ pip install -r requirements-gpu.txt
 python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.cuda.get_device_name(0))"
 ```
 最后一行要打印出 `True` 和 GPU 型号。如果是 `False`，按 `requirements-gpu.txt` 开头的注释装 CUDA 版的 torch。
+
+## 推荐：用 notebook 一步一步跑
+
+打开 **[rq1_gpu.ipynb](rq1_gpu.ipynb)**，从上往下一个 cell 一个 cell 地跑，下面第 3 到 5 节的事它都包含了：
+
+1. 先把第一个 cell 里的 `QUICK_TEST` 改成 `True`，从头跑一遍（几分钟），确认环境没问题
+2. 改回 `False`，正式跑。第 3 步要根据第 2 步的结果手动填学习率和步数
+3. **每一步的结果都会自动写进 `results/gpu_report.txt`**，跑完把这一个文件发回来就行。某一步重跑，只替换那一段
+
+notebook 训练和健康检查都只读预先造好的题库，所以在 Jupyter 里也完全可复现（不受 `PYTHONHASHSEED` 影响）。
+notebook 由 [build_notebook.py](build_notebook.py) 生成，要改 notebook 的内容，改这个脚本再运行 `python build_notebook.py`。
+
+下面第 3 到 5 节是同样的事情，用脚本在终端里跑的版本。
 
 ## 3. 确认和 Mac 上一致（约 5 分钟）
 
@@ -71,10 +85,9 @@ Mac 上用的 `caffeinate` 和 `osascript` 是 macOS 专用的。Linux 上用：
 nohup python run_grid.py ... > logs/grid.log 2>&1 &
 tail -f logs/grid.log
 ```
-如果是 Jupyter，不要在 notebook 里直接 import 训练代码，而是用 `!python run_grid.py ...` 这种方式调用脚本：
-[priors/__init__.py](priors/__init__.py) 需要在进程启动时固定 `PYTHONHASHSEED`，notebook 内核做不到，只会给出警告，造出的数据就不可复现。
+在 Jupyter 里，用 [rq1_gpu.ipynb](rq1_gpu.ipynb) 就行，它只读题库。只有现场造题（`make_prior_dump.py`、`MixedPriorDataLoader`）需要固定 `PYTHONHASHSEED`，这些请在终端里用脚本跑，[priors/__init__.py](priors/__init__.py) 会自动处理；在 notebook 内核里做不到，只会给出警告。
 
 ## 7. 注意
 
 - 论文只能用公开数据。这个包里只有公开数据（TabArena）和合成数据，可以放心带
-- 跑完后把 `results/`、`figures/`、两份文档的更新带回来（或者直接 commit），Mac 上的 repo 用 `git pull` 或手动合并
+- 跑完后**把 `results/gpu_report.txt` 发回来**；需要更细的分析时，再带回 `results/`、`figures/`

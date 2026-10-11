@@ -280,7 +280,11 @@ plot_curves.py              画取舍曲线
 run_grid.py                 跑完整的 7 个 r 乘 3 个 seed
 check_priors.py             对比两个 prior 的输出
 make_prior_dump.py          造题库
-prior_dumps/                两个题库（.h5，不进 git）
+prior_dumps/                两个题库和两个健康检查用的小题库（.h5，不进 git）
+rq1_gpu.ipynb               GPU 上一步一步跑的 notebook，结果写进 results/gpu_report.txt
+build_notebook.py           生成 rq1_gpu.ipynb
+RUN_ON_GPU.md               GPU 上怎么跑
+requirements-gpu.txt        GPU 上的依赖
 diagnostics/
   prior_learnability.py     4.1
   table_size.py             4.3、方案 (a)
