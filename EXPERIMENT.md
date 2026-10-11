@@ -1,6 +1,6 @@
 # RQ1 实验说明：金融 prior 和通用 prior 的取舍曲线
 
-最后更新：2026-10-10。状态标记：✅ 已实现并测过，🟡 已实现但待验证，⬜ 未实现。
+最后更新：2026-10-11。状态标记：✅ 已实现并测过，🟡 已实现但待验证，⬜ 未实现。
 
 ## 0. 要回答的问题
 
@@ -11,22 +11,24 @@
 ## 1. 整体流程和对应的代码
 
 ```
-通用 prior (TabICLv2) ─┐
-                       ├─ MixedPrior(r) ─ MixedPriorDataLoader ─ train() ─ checkpoint ─ evaluate.py ─ plot_curves.py
-金融 prior (FinTFM)   ─┘   每张表按 r 选来源   填 NaN、补零、切分                       两套考卷        取舍曲线
-        ✅                       ✅                   ✅                  🟡                     ✅              ✅
-                                        一键跑全部：run_grid.py ✅
+通用 prior (TabICLv2) ─ make_prior_dump.py ─ 通用题库 10 万张 ─┐
+                                                              ├─ DumpMixedDataLoader(r) ─ train() ─ checkpoint ─ evaluate.py ─ plot_curves.py
+金融 prior (FinTFM)   ─ make_prior_dump.py ─ 金融题库 10 万张 ─┘   按 r 抽题、填 NaN、切分                    两套考卷        取舍曲线
+        ✅                      ✅                    ✅                       ✅                  🟡                  ✅              ✅
+                                                        一键跑全部：run_grid.py ✅
 ```
+（2026-10-11 之前是训练时现场造题：`MixedPrior` 加 `MixedPriorDataLoader`，现在用 `--on_the_fly` 仍可切回。）
 
 | 步骤 | 文件 | 运行方式 |
 |---|---|---|
-| 造题 | [priors/mixture.py](priors/mixture.py)、[priors/fintfm_financial.py](priors/fintfm_financial.py) | 被训练脚本调用 |
-| 拼 batch | [priors/batching.py](priors/batching.py) | 被训练脚本调用 |
+| 造题 | [priors/mixture.py](priors/mixture.py)、[priors/fintfm_financial.py](priors/fintfm_financial.py) | 被造题库的脚本调用 |
+| 造题库 | [make_prior_dump.py](make_prior_dump.py) | `python make_prior_dump.py --prior generic --n_tables 100000`（金融用 `--prior finance`） |
+| 按 r 抽题、拼 batch | [priors/batching.py](priors/batching.py) `DumpMixedDataLoader` | 被训练脚本调用 |
 | 训练一个模型 | [train_mixed.py](train_mixed.py)（调用 [train.py](train.py) 的 `train()`） | `python train_mixed.py --r 0.3 --seed 0 --steps 3000 --batch_size 8` |
 | 考卷 | [benchmark/datasets.py](benchmark/datasets.py)、[benchmark/metrics.py](benchmark/metrics.py) | 被评估脚本调用 |
 | 评估 | [evaluate.py](evaluate.py) | `python evaluate.py checkpoints/*.pth --baselines` |
 | 画曲线 | [plot_curves.py](plot_curves.py) | `python plot_curves.py` |
-| 跑完整网格 | [run_grid.py](run_grid.py) | `python run_grid.py --steps 3000 --batch_size 8` |
+| 跑完整网格 | [run_grid.py](run_grid.py) | `python run_grid.py --steps 3000 --batch_size 8 --lr 1e-3 --out_dir checkpoints/lr1e-3`，结果在 `results/lr1e-3/` |
 
 ## 2. 造题和训练
 
@@ -41,7 +43,19 @@
 
 ### 2.2 r 的定义 ✅
 
-**每张表**以概率 r 来自金融 prior，否则来自通用 prior。r 按表的数量算，对应 data mixing law 里的 r。代码：[priors/mixture.py](priors/mixture.py) `MixedPrior.sample()`。
+**每张表**以概率 r 来自金融 prior，否则来自通用 prior。r 按表的数量算，对应 data mixing law 里的 r。代码：[priors/batching.py](priors/batching.py) `DumpMixedDataLoader`。
+
+### 2.2b 题库 ✅（2026-10-11）
+
+| 题库 | 文件 | 大小 | 内容 |
+|---|---|---|---|
+| 通用 | `prior_dumps/generic_graph_scm_100k_256x24_seed0.h5` | 0.80 GB | 10 万张，tabicl 2.2.0，正例比例中位数 0.496，无缺失 |
+| 金融 | `prior_dumps/finance_100k_256x24_seed0.h5` | 1.55 GB | 10 万张，FinTFM `7c297d0`，正例比例中位数 0.047，缺失 5.2% |
+
+- 分块生成，每块 1000 张、seed 固定，所以不管用几个进程，文件都完全一样（已验证 1 个和 4 个 worker 的校验值相同）
+- 缺失值原样保留，训练时按切分点填补
+- 抽题规则：每个题库按 seed 打乱一次，依次往下取，一次训练内不重复；同一个 seed 下，决定来源的随机数在不同 r 之间共用，所以不同 r 只差在 r 本身
+- 每批取题 1 到 3 毫秒（现场造题是 280 毫秒）
 
 ### 2.3 表的格式 🟡
 
@@ -53,18 +67,18 @@
 | train/test 切分 | 每个 batch 从 {80, 96, ..., 224} 里随机选 | 只取 16 的倍数，batch 形状只有 10 种，避免 Mac GPU 缓存爆掉 |
 | 缺失值 | 用 train 行的列均值填补 | `impute_with_train_mean()`，评估真实表时用同一个函数 |
 
-🟡：256 乘 24 在训练量少时不稳定，方案 (a) 正在验证（见 4.3）。
+🟡：256 乘 24、batch 8、学习率 4e-3 时训练会随机崩溃（见 4.4），正在验证学习率。
 
 ### 2.4 模型和训练 🟡
 
 | 项目 | 设定 |
 |---|---|
 | 模型 | nanoTabPFN：embedding 96，4 heads，MLP 192，3 层，2 个输出 |
-| 优化器 | schedule-free AdamW，lr 4e-3 |
+| 优化器 | schedule-free AdamW，学习率**待定**：原版 4e-3 是配 batch 32 的，batch 8 时候选 1e-3（见 4.4） |
 | batch | Mac 上 8（16 GB 内存的限制），GPU 上计划 32 |
-| 步数 | 待方案 (a) 定 |
-| 速度（Mac） | 每步约 0.67 秒 = 模型 0.39 秒 + 造题 0.28 秒（造题是单线程 CPU，GPU 上可以并行） |
-| 随机性 | 同一个 seed 完全可复现（python / numpy / torch 三个 seed 都设了） |
+| 步数 | 3000（方案 (a)：1000 步后 breast cancer 基本不再上升） |
+| 速度（Mac） | 从题库读题后每步约 0.39 秒，3000 步约 20 分钟（现场造题时是 0.67 秒） |
+| 随机性 | 同一个 seed 完全可复现：题库文件固定；python / numpy / torch 三个 seed 都设了；`PYTHONHASHSEED` 自动固定为 0（[priors/__init__.py](priors/__init__.py)） |
 
 **对原版 [train.py](train.py) 的两处修改：**
 1. 每步之后在 Mac 上清一次 GPU 缓存
@@ -133,8 +147,38 @@
 | breast cancer AUC，第 500 / 1000 / 1500 / 2000 / 2500 / 3000 步 | 0.968 / 0.982 / 0.971 / 0.974 / 0.979 / 0.977 | 0.801 / 0.972 / 0.988 / 0.987 / 0.990 / 0.982 |
 | 100 张没见过的 graph_scm 表的 AUC | 0.691 | 0.703 |
 
-结论：**256 乘 24 可以稳定训练**，两个 seed 差 0.005 到 0.012，没有再出现学反的情况。在没见过的同类表上，模型达到 0.69 到 0.70，接近随机森林在这类表上的 0.707（见 4.1），说明模型确实从 prior 里学到了东西。breast cancer 在 1000 步后基本不再上升。每个 seed 约 35 分钟。
+当时的结论是"256 乘 24 可以稳定训练"，**2026-10-11 被推翻**（见 4.4）：这两次只是碰巧没崩。两个 seed 差 0.005 到 0.012。在没见过的同类表上，模型达到 0.69 到 0.70，接近随机森林在这类表上的 0.707（见 4.1），说明模型确实从 prior 里学到了东西。breast cancer 在 1000 步后基本不再上升。每个 seed 约 35 分钟。
 注意：这次同时改了通用 prior（mix_scm 换成 graph_scm）和 schedule-free 的 bug，分不清稳定性来自哪一处。
+
+**4.4 训练会随机崩溃（2026-10-11）**
+
+r = 0 和 r = 1 各训 3000 步（现场造题，batch 8，学习率 4e-3，seed 0），结果归档在 `checkpoints/onthefly_prehashfix_2026-10-11/` 和 `results/onthefly_prehashfix_2026-10-11/`：
+
+| 模型 | 金融 AUC | 金融 ECE | 通用 AUC | 通用 ECE |
+|---|---|---|---|---|
+| r = 0 | 0.506 | 0.320 | 0.501 | 0.221 |
+| r = 1 | 0.744 | 0.058 | 0.717 | 0.093 |
+
+r = 0 在第 500 到 1000 步之间崩了：loss 从 0.57 升到 0.69 并一直停在那里，breast cancer AUC 0.50。和方案 (a) 的 seed 0 设置完全相同却结果不同，原因是 TabICL 依赖 Python 的哈希种子，两次看到的是不同的数据（已修）。
+
+到目前为止，256 乘 24、batch 8、学习率 4e-3 的 4 次训练：
+
+| 运行 | 结果 |
+|---|---|
+| 10/9，600 步，mix_scm | 0.226，学反 |
+| 方案 (a) seed 0 | 0.977 |
+| 方案 (a) seed 1 | 0.982 |
+| 10/11 r = 0 | 0.500，崩 |
+
+推测：学习率 4e-3 是原版配 batch 32 调的，batch 8 时梯度噪声大约是 2 倍；通用 prior 的表大多类别平衡、规律很弱，"永远输出 50/50"是个 loss 0.69 的局部最优，被坏 batch 推进去就出不来。金融表大多违约率低，输出 50/50 的 loss 很高，所以不会停在那里。
+
+**判断"崩了"的标准**（用于学习率验证）：
+
+| | 健康 | 崩了 |
+|---|---|---|
+| 100 张没见过的合成表 AUC | ≥ 0.65 | < 0.55 |
+| breast cancer AUC | ≥ 0.9 | < 0.6 |
+| 训练 loss（r = 0） | 明显低于 0.69 | 停在 0.69（ln 2）附近 |
 
 ## 5. 已做的决定（2026-10-10）
 
@@ -144,10 +188,15 @@
 4. 金融表里的极端值暂时不做 log 变换
 5. "金融规律"和"格式差异"分不开的问题：pilot 先不管，曲线出来后再加 ablation
 
+**2026-10-11 追加：**
+
+6. 改为预先造好题库，训练时从题库按 r 抽题（2.2b）
+7. 先验证学习率（4e-3 vs 1e-3，r = 0，各 3 个 seed，1000 步），再跑正式实验
+
 ## 6. 待决定
 
 1. **4 个"银行但非信贷"的数据集**（第 3 节）放哪边？现在两边都不放。
-2. **训练步数**：等方案 (a) 的结果。
+2. **学习率**：等学习率验证的结果。
 3. **GPU 预算**：等步数定了再找 Bo。按 Mac 的速度，3000 步一次约 35 分钟，21 次约 12 小时；如果需要更多步数或 batch 32，Mac 就不够用了。
 
 ## 7. 文件清单
@@ -170,6 +219,8 @@ evaluate.py                 在两套考卷上评估
 plot_curves.py              画取舍曲线
 run_grid.py                 跑完整的 7 个 r 乘 3 个 seed
 check_priors.py             对比两个 prior 的输出
+make_prior_dump.py          造题库
+prior_dumps/                两个题库（.h5，不进 git）
 diagnostics/
   prior_learnability.py     4.1
   table_size.py             4.3、方案 (a)

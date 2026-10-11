@@ -92,19 +92,23 @@
 - 写好 `run_grid.py`（批量训练加评估）和 `plot_curves.py`（画取舍曲线）。
 - **方案 (a) 通过：** 256 乘 24、3000 步，两个 seed 的 breast cancer AUC 是 0.977 和 0.982，训练稳定；在没见过的合成表上 AUC 0.69 到 0.70，接近随机森林的 0.707。
 
-### 2026-10-11
+### 2026-10-11（凌晨）
 - 发现并修复 `run_grid.py` 会误用旧 checkpoint 的问题。
 - r = 0 和 r = 1 的实验启动后，因为要关机停掉了，明早重跑。
 - 建立本文档（RESEARCH.md），代码做了第一次 git commit。
 
+### 2026-10-11（上午）
+- 跑了 r = 0 和 r = 1（现场造题，3000 步，batch 8，学习率 4e-3）。**r = 0 训练中途崩了**：loss 卡在 0.69（ln 2），所有考卷 AUC 0.50。r = 1 正常：金融 AUC 0.744，通用 AUC 0.717（随机森林 0.779 / 0.734）。这组结果不可复现，已归档到 `checkpoints/onthefly_prehashfix_2026-10-11/`，不作结论。
+- **发现可复现性 bug：** TabICL 的输出依赖 Python 每个进程的哈希种子，同一个 seed 在不同进程里造出不同的表。已修（`priors/__init__.py` 自动固定 `PYTHONHASHSEED`）。所以方案 (a) 的成功和今天的崩溃其实看到的是不同数据。
+- **训练不稳定：** 256 乘 24 的表、batch 8、学习率 4e-3，4 次训练里坏了 2 次。推测原因：学习率 4e-3 是原版配 batch 32 的，batch 降到 8 没跟着降。
+- **改成预先造好题库（Jerry 的建议）：** 通用（graph_scm）和金融各 10 万张表，存成 h5（`make_prior_dump.py`）。训练改为从题库按比例抽题（`DumpMixedDataLoader`）：每批取题从 280 毫秒降到 1 到 3 毫秒，跨进程完全可复现，一次训练内不重复，不同 r 之间共用随机数。
+
 ## 6. 下一步
 
 **马上要做：**
-1. **跑 r = 0 和 r = 1**（约 70 分钟）：纯通用和纯金融在两套考卷上有没有"交叉"。有交叉就继续，几乎一样就先停下来想。
-   ```bash
-   cd ~/Desktop/nanoTabPFN-main && nohup sh -c 'caffeinate -i -s .venv/bin/python -W ignore -u run_grid.py --rs 0 1 --seeds 0 --steps 3000 > logs/grid_r0_r1.log 2>&1; osascript -e "display notification \"r=0 和 r=1 跑完了\" with title \"nanoTabPFN\" sound name \"Glass\""' > /dev/null 2>&1 &
-   ```
-2. 有交叉的话：中间 5 个 r 跑 seed 0（约 3 小时），先看曲线形状；再补 seed 1 和 2。
+1. **学习率验证**：r = 0，学习率 4e-3 和 1e-3 各 3 个 seed，每个 1000 步，按 EXPERIMENT.md 4.4 的标准判断健康还是崩了。
+2. 选定学习率后，跑 r = 0 和 r = 1，看两套考卷上有没有"交叉"。有交叉就继续，几乎一样就先停下来想。
+3. 有交叉的话：中间 5 个 r 跑 seed 0，先看曲线形状；再补 seed 1 和 2。
 
 **要找 Bo 的：**
 - GPU 预算：Mac 上完整的 21 次约 12 小时，而且 batch 只能开到 8；GPU 上可以更快、训得更充分
