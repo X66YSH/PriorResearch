@@ -2,6 +2,26 @@
 
 写于 2026-10-11，从 Mac（16 GB，MPS）转到 GPU。所有命令都在 repo 根目录下运行。
 
+## 用 Colab（推荐，2026-10-11）
+
+Colab 免费版有 T4 GPU（16 GB 显存），全程用自己的 Google 账号。
+
+**准备（一次）：**
+1. 在 Google Drive 里建文件夹 `tfm_prior`（即 `MyDrive/tfm_prior`），把 `tfm_prior_gpu_code_*.zip`（3.6 MB）传进去
+2. 可选：把 Mac 上 `prior_dumps/` 里的 4 个 `.h5` 文件（2.3 GB）传到 `MyDrive/tfm_prior/prior_dumps/`。这样就不用在 Colab 上造题库（省约 30 分钟），而且题和 Mac 上完全相同
+3. 打开 https://colab.research.google.com ，**File → Upload notebook**，选 Mac 上的 `rq1_gpu.ipynb`
+4. 菜单 **Runtime → Change runtime type → T4 GPU**
+
+**运行：** 从第一个 cell（"Colab：先跑这一个 cell"）开始，从上往下跑。它会自动连 Drive、解压代码、补装 `tabicl` 等包、准备题库。之后和普通 GPU 机器一样，先 `QUICK_TEST = True` 跑一遍，再改成 `False`。
+
+**断线：** 免费版最长约 12 小时，闲置也会断。模型、成绩、报告都存在 `MyDrive/tfm_prior/` 下，断了之后重新打开 notebook、从头跑，已训好的模型会自动跳过。
+
+**结果：** 报告在 `MyDrive/tfm_prior/results/gpu_report.txt`，下载下来发回来就行。
+
+注意：Colab 自带的 torch、numpy、scikit-learn 版本可能和 Mac 上不同，所以第 1 步里随机森林的分数可能和 Mac 差一点点（小数点后第 3 到 4 位），这不影响实验。
+
+下面第 1 到 7 节是在普通 GPU 机器上的做法。
+
 ## 1. 带过去的东西
 
 一个小 zip（几 MB，可以用邮件发），解压后是一个完整的 repo：
