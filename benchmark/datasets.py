@@ -17,7 +17,6 @@ Prepared subsamples are cached in benchmark/cache/ so every checkpoint sees exac
 import os
 
 import numpy as np
-import openml
 import pandas as pd
 from sklearn.compose import ColumnTransformer
 from sklearn.model_selection import train_test_split
@@ -93,6 +92,8 @@ def get_feature_preprocessor(X: pd.DataFrame) -> ColumnTransformer:
 
 def prepare_dataset(task_id: int) -> list[tuple[np.ndarray, np.ndarray]] | None:
     """Returns N_REPEATS (X, y) subsamples for one task, or None if its minority class is too rare."""
+    import openml  # only needed to build the cache; benchmark/cache is shipped, so most runs never import it
+
     task = openml.tasks.get_task(task_id, download_splits=False)
     dataset = task.get_dataset(download_data=False)
     if dataset.qualities["MinorityClassPercentage"] < MIN_MINORITY_PERCENT:

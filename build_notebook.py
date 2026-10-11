@@ -33,6 +33,69 @@ md("""
 """)
 
 md("""
+## Colab：先跑这一个 cell
+
+在 Colab 上用之前（只需一次）：
+1. 在 Google Drive 里建文件夹 `tfm_prior`（也就是 `MyDrive/tfm_prior`），把 `tfm_prior_gpu_code_*.zip` 传进去
+2. 在 Colab 里打开这个 notebook，菜单 **Runtime → Change runtime type → T4 GPU**
+
+下面这个 cell 会：连上 Drive；把代码解压到 Colab 本地；补装 `tabicl` 等几个包；把 `checkpoints/`、`results/`、`figures/` 放到 Drive 上（断线也不丢，重新跑会自动跳过已训好的）；准备题库。
+
+题库：第一次在 Colab 上造，约 30 分钟（Colab 只有 2 个 CPU 核），造好后备份到 `MyDrive/tfm_prior/prior_dumps/`，以后直接拷回来。也可以把 Mac 上的 4 个题库文件预先传到这个文件夹里，就不用造了，而且和 Mac 上的题完全相同。
+
+不在 Colab 上时，这个 cell 什么都不做。
+""")
+
+code("""
+import glob
+import os
+import subprocess
+import sys
+
+IN_COLAB = "google.colab" in sys.modules
+DRIVE_DIR = "/content/drive/MyDrive/tfm_prior"  # the code zip goes here; outputs and pool backups are kept here
+REPO_DIR = "/content/nanoTabPFN-main"
+
+
+def colab_setup(drive_dir, repo_dir, mount=True, install=True):
+    \"\"\"Unzips the code next to the runtime, keeps outputs on Drive, and puts the prior pools on local disk.\"\"\"
+    shell = get_ipython().system  # streams command output into the notebook
+    if mount:
+        from google.colab import drive
+        drive.mount(os.path.dirname(os.path.dirname(drive_dir)))
+    if not os.path.exists(repo_dir):
+        zips = sorted(glob.glob(f"{drive_dir}/tfm_prior_gpu_code_*.zip"))
+        assert zips, f"upload tfm_prior_gpu_code_*.zip to {drive_dir}"
+        subprocess.run(["unzip", "-q", zips[-1], "-d", os.path.dirname(repo_dir)], check=True)
+    os.chdir(repo_dir)
+    if repo_dir not in sys.path:
+        sys.path.insert(0, repo_dir)
+    if install:
+        shell(f"{sys.executable} -m pip install -q tabicl==2.2.0 schedulefree==1.4.1 h5py xgboost")
+    # outputs live on Drive so a disconnect loses nothing; the Mac reference results in the zip are copied over once
+    for folder in ["checkpoints", "results", "figures", "logs"]:
+        target = f"{drive_dir}/{folder}"
+        os.makedirs(target, exist_ok=True)
+        if os.path.isdir(folder) and not os.path.islink(folder):
+            subprocess.run(["cp", "-Rn", f"{folder}/.", target], check=True)
+            subprocess.run(["rm", "-rf", folder], check=True)
+        if not os.path.exists(folder):
+            os.symlink(target, folder)
+    # pools: read from local disk (fast), backed up on Drive between sessions
+    backup = f"{drive_dir}/prior_dumps"
+    os.makedirs("prior_dumps", exist_ok=True)
+    os.makedirs(backup, exist_ok=True)
+    shell(f"cp -n {backup}/*.h5 prior_dumps/ 2>/dev/null; true")
+    shell(f"{sys.executable} make_prior_dump.py --all --workers {os.cpu_count()}")  # skips pools that exist
+    shell(f"cp -n prior_dumps/*.h5 {backup}/")
+    print("ready, working directory", os.getcwd())
+
+
+if IN_COLAB:
+    colab_setup(DRIVE_DIR, REPO_DIR)
+""")
+
+md("""
 ## 0. 准备
 
 **第一次在新机器上跑之前，先在终端里造题库**（repo 根目录下，约 10 分钟）：
