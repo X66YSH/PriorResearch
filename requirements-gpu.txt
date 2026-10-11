@@ -12,3 +12,4 @@ tabicl==2.2.0
 xgboost==3.2.0
 openml==0.15.1
 matplotlib==3.11.2
+ipykernel  # to run rq1_gpu.ipynb in the .venv; add jupyter too if the machine has no Jupyter
