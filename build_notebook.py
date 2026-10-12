@@ -39,9 +39,9 @@ md("""
 1. 在 Google Drive 里建文件夹 `tfm_prior`（也就是 `MyDrive/tfm_prior`），把 `tfm_prior_gpu_code_*.zip` 传进去
 2. 在 Colab 里打开这个 notebook，菜单 **Runtime → Change runtime type → T4 GPU**
 
-下面这个 cell 会：连上 Drive；把代码解压到 Colab 本地；补装 `tabicl` 等几个包；把 `checkpoints/`、`results/`、`figures/` 放到 Drive 上（断线也不丢，重新跑会自动跳过已训好的）；准备题库。
+下面这个 cell 会：连上 Drive；把代码解压到 Colab 本地；补装 `tabicl` 等几个包；把 `checkpoints/`、`results/`、`figures/` 放到 Drive 上（断线也不丢，重新跑会自动跳过已训好的）；把题库从 Drive 拷到本地并检查校验值。
 
-题库：第一次在 Colab 上造，约 30 分钟（Colab 只有 2 个 CPU 核），造好后备份到 `MyDrive/tfm_prior/prior_dumps/`，以后直接拷回来。也可以把 Mac 上的 4 个题库文件预先传到这个文件夹里，就不用造了，而且和 Mac 上的题完全相同。
+**题库要从 Mac 上传**：把 Mac 上 `~/Desktop/nanoTabPFN-main/prior_dumps/` 里的 4 个 `.h5` 文件（2.3 GB）传到 `MyDrive/tfm_prior/prior_dumps/`。不在 Colab 上造：Colab 只有 2 个很慢的 vCPU，通用题库要约 4.5 小时；TabICL 的 `graph_scm` 也不能在 GPU 上运行（tabicl 2.2.0 有张量建在 CPU 上）。
 
 不在 Colab 上时，这个 cell 什么都不做。
 """)
@@ -55,10 +55,16 @@ import sys
 IN_COLAB = "google.colab" in sys.modules
 DRIVE_DIR = "/content/drive/MyDrive/tfm_prior"  # the code zip goes here; outputs and pool backups are kept here
 REPO_DIR = "/content/nanoTabPFN-main"
+POOLS = ["finance_100k_256x24_seed0.h5", "generic_graph_scm_100k_256x24_seed0.h5",
+         "finance_1k_256x24_seed1.h5", "generic_graph_scm_1k_256x24_seed1.h5"]
 
 
 def colab_setup(drive_dir, repo_dir, mount=True, install=True):
-    \"\"\"Unzips the code next to the runtime, keeps outputs on Drive, and puts the prior pools on local disk.\"\"\"
+    \"\"\"Unzips the code next to the runtime, keeps outputs on Drive, and copies the prior pools from Drive to local disk.
+
+    The pools are made on the Mac and uploaded to drive_dir/prior_dumps: on Colab's 2 slow vCPUs the generic pool
+    takes about 4.5 hours, and TabICL's graph_scm cannot run on a GPU (tabicl 2.2.0 creates some tensors on the CPU).
+    \"\"\"
     shell = get_ipython().system  # streams command output into the notebook
     if mount:
         from google.colab import drive
@@ -81,13 +87,17 @@ def colab_setup(drive_dir, repo_dir, mount=True, install=True):
             subprocess.run(["rm", "-rf", folder], check=True)
         if not os.path.exists(folder):
             os.symlink(target, folder)
-    # pools: read from local disk (fast), backed up on Drive between sessions
+    # pools: uploaded from the Mac to Drive, copied to local disk because reading from Drive is slow
     backup = f"{drive_dir}/prior_dumps"
+    missing = [name for name in POOLS if not os.path.exists(f"{backup}/{name}")]
+    if missing:
+        raise FileNotFoundError(f"upload these files from ~/Desktop/nanoTabPFN-main/prior_dumps on the Mac to {backup}: {missing}")
     os.makedirs("prior_dumps", exist_ok=True)
-    os.makedirs(backup, exist_ok=True)
-    shell(f"cp -n {backup}/*.h5 prior_dumps/ 2>/dev/null; true")
-    shell(f"{sys.executable} make_prior_dump.py --all --workers {os.cpu_count()}")  # skips pools that exist
-    shell(f"cp -n prior_dumps/*.h5 {backup}/")
+    for name in POOLS:
+        if not os.path.exists(f"prior_dumps/{name}"):
+            print("copying", name)
+            subprocess.run(["cp", f"{backup}/{name}", "prior_dumps/"], check=True)
+    shell(f"{sys.executable} make_prior_dump.py --all")  # only checks: prints each pool's checksum against the Mac pools
     print("ready, working directory", os.getcwd())
 
 

@@ -8,7 +8,7 @@ Colab 免费版有 T4 GPU（16 GB 显存），全程用自己的 Google 账号�
 
 **准备（一次）：**
 1. 在 Google Drive 里建文件夹 `tfm_prior`（即 `MyDrive/tfm_prior`），把 `tfm_prior_gpu_code_*.zip`（3.6 MB）传进去
-2. 可选：把 Mac 上 `prior_dumps/` 里的 4 个 `.h5` 文件（2.3 GB）传到 `MyDrive/tfm_prior/prior_dumps/`。这样就不用在 Colab 上造题库（省约 30 分钟），而且题和 Mac 上完全相同
+2. **必须：** 把 Mac 上 `prior_dumps/` 里的 4 个 `.h5` 文件（2.3 GB）传到 `MyDrive/tfm_prior/prior_dumps/`。不能在 Colab 上造：Colab 免费版只有 2 个很慢的 vCPU（实测金融题库 412 秒、通用题库约 4.5 小时，Mac 上分别是 16 秒和 10 分钟）；TabICL 的 `graph_scm` 也不能在 GPU 上运行
 3. 打开 https://colab.research.google.com ，**File → Upload notebook**，选 Mac 上的 `rq1_gpu.ipynb`
 4. 菜单 **Runtime → Change runtime type → T4 GPU**
 
