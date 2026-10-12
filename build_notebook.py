@@ -410,12 +410,13 @@ grid_table.round(3)
 """)
 
 code("""
-# reference lines for the plot
-for name, baseline in [("baseline_random_forest", RandomForestClassifier(n_estimators=200, random_state=0, n_jobs=-1)),
-                       ("baseline_logistic_regression", make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000)))]:
+# reference lines for the plot; the random forest was already evaluated in step 1 on the same suites, so reuse it
+rf_result = rf if "rf" in globals() else evaluate(RandomForestClassifier(n_estimators=200, random_state=0, n_jobs=-1), SUITE_DATA)
+baselines = {"baseline_random_forest": rf_result,
+             "baseline_logistic_regression": evaluate(make_pipeline(StandardScaler(), LogisticRegression(max_iter=1000)), SUITE_DATA)}
+for name, result in baselines.items():  # evaluate first, then write: an interrupted run leaves no empty file
     with open(f"{RESULTS_DIR}/{name}.json", "w") as f:
-        json.dump(evaluate(baseline, SUITE_DATA), f, indent=2)
-baselines = {name: json.load(open(f"{RESULTS_DIR}/{name}.json")) for name in ["baseline_random_forest", "baseline_logistic_regression"]}
+        json.dump(result, f, indent=2)
 report("4b grid, baselines", pd.DataFrame({name: suite_means(b) for name, b in baselines.items()}).T.round(4).to_string())
 """)
 
