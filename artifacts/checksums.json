@@ -1,0 +1,9 @@
+{
+  "note": "Content checksums (md5 over X, y, num_features; tfmprior.data.dump.content_checksum) of the reference pools, generated on the Mac (Apple M-series, tabicl 2.2.0, torch 2.8.0, numpy 2.4.6) on 2026-10-11.",
+  "pools": {
+    "generic_graph_scm_100k_256x24_seed0.h5": {"prior": "graph_scm", "n_tables": 100000, "seed": 0, "n_rows": 256, "max_features": 24, "content_checksum": "0f3423218e96"},
+    "finance_100k_256x24_seed0.h5": {"prior": "fintfm", "n_tables": 100000, "seed": 0, "n_rows": 256, "max_features": 24, "content_checksum": "b869733eb779"},
+    "generic_graph_scm_1k_256x24_seed1.h5": {"prior": "graph_scm", "n_tables": 1000, "seed": 1, "n_rows": 256, "max_features": 24, "content_checksum": "011ea0e594e1"},
+    "finance_1k_256x24_seed1.h5": {"prior": "fintfm", "n_tables": 1000, "seed": 1, "n_rows": 256, "max_features": 24, "content_checksum": "eb3e6b2272a2"}
+  }
+}

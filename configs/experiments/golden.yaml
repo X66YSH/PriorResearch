@@ -1,0 +1,11 @@
+# The training golden answer (golden/README.md): must reproduce golden/train_<device>.json bit for bit.
+experiment:
+  name: golden
+train:
+  seed: 0
+  steps: 200
+  save_at_steps: [200]
+data:
+  mixture: {graph_scm: 0.7, fintfm: 0.3}
+eval:
+  after_train: false

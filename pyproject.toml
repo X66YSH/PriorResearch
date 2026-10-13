@@ -1,26 +1,39 @@
 [project]
-name = "nanotabpfn-main"
+name = "tfm-prior-mixing"
 version = "0.1.0"
-description = "Add your description here"
+description = "Mixing a domain prior with a generic prior when pretraining a tabular foundation model (nanoTabPFN)"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "h5py>=3.16.0",
-    "ipykernel>=7.4.0",
+    "matplotlib>=3.10",
     "numpy>=2.4.6",
-    "openml>=0.15.1",
+    "openml>=0.15.1",          # only to rebuild the benchmark cache
+    "pandas>=2.2",
+    "pyyaml>=6.0",
     "schedulefree>=1.4.1",
     "scikit-learn>=1.6.1",
-    "seaborn>=0.13.2",
-    "tabicl>=2.2.0",
-    "tabpfn==2.2.1",
+    "tabicl==2.2.0",           # generic priors; pinned: pool content depends on its code
     "torch<2.9",
-    "xgboost>=3.2.0",
+    "xgboost>=3.2.0",          # imported by tabicl's prior module
 ]
 
-[project.scripts]
-nanotabpfn-main = "nanotabpfn_main:main"
+[project.optional-dependencies]
+upstream = [                   # only for upstream/experiment.ipynb, the original nanoTabPFN notebook
+    "ipykernel>=7.4.0",
+    "seaborn>=0.13.2",
+    "tabpfn==2.2.1",
+]
+
+[dependency-groups]
+dev = ["pytest>=8"]
 
 [build-system]
 requires = ["uv_build>=0.12.23,<0.13.0"]
 build-backend = "uv_build"
+
+[tool.uv.build-backend]
+module-name = "tfmprior"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

@@ -1,0 +1,18 @@
+# Smoke test on the real pools: a tiny model, 10 steps, one dataset per suite. A few minutes on a laptop CPU.
+#   python scripts/train.py --config configs/experiments/smoke.yaml --overwrite
+experiment:
+  name: smoke
+model:
+  embedding_size: 16
+  mlp_hidden_size: 32
+  num_layers: 2
+train:
+  steps: 10
+  batch_size: 4
+  save_at_steps: [5, 10]
+data:
+  mixture: {graph_scm: 0.7, fintfm: 0.3}
+eval:
+  max_datasets_per_suite: 1
+  validation:
+    n_tables: 5
