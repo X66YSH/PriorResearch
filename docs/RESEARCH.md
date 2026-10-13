@@ -1,9 +1,9 @@
 # TFM Prior 研究总文档
 
-最后更新：2026-10-11。
+最后更新：2026-10-13。
 
-这是整个研究的总入口：课题、研究问题、计划、进展和文献。RQ1 实验的具体设计、代码和数字在 [EXPERIMENT.md](EXPERIMENT.md)。
-每次有进展，两份文档都要更新：新进展写进第 5 节的日志，实验细节写进 EXPERIMENT.md。
+这是整个研究的总入口：课题、研究问题、计划、进展和文献。RQ1 实验的具体设计、代码和数字在 [EXPERIMENTS.md](EXPERIMENTS.md)。
+每次有进展，两份文档都要更新：新进展写进第 5 节的日志，实验细节写进 EXPERIMENTS.md。
 
 ## 1. 背景
 
@@ -45,7 +45,7 @@
 
 **Prior** 是一段随机造练习题的程序：每次随机抽一条规则（一个从不训练的随机小模型），按规则造一张表。TFM 在几百万张这样的表上练习"看几行带答案的例子，猜出规则，预测新行"，即 in-context learning。不同的 prior 就是对"真实世界的规律长什么样"的不同假设。
 
-**我们的实验（RQ1 pilot），细节见 [EXPERIMENT.md](EXPERIMENT.md)：**
+**我们的实验（RQ1 pilot），细节见 [EXPERIMENTS.md](EXPERIMENTS.md)：**
 
 | 项目 | 设定 |
 |---|---|
@@ -86,7 +86,7 @@
 - 发现：256 行乘 24 特征的大表训 600 步时极不稳定（两个 seed 的 AUC 是 0.226 和 0.877）。
 
 ### 2026-10-10
-- Jerry 批准 5 项决定（见 EXPERIMENT.md 第 5 节），其中通用 prior 换成 TabICLv2 的 `graph_scm`。
+- Jerry 批准 5 项决定（见 EXPERIMENTS.md 第 5 节），其中通用 prior 换成 TabICLv2 的 `graph_scm`。
 - **修了原版 train.py 的 bug：** schedule-free 优化器训练结束时没切到 eval 模式，保存和评估的都是训练参数。之前的结果都受影响。
 - 做好两套考卷和评估脚本。随机森林参考线：金融 AUC 0.779，通用 AUC 0.734。
 - 写好 `run_grid.py`（批量训练加评估）和 `plot_curves.py`（画取舍曲线）。
@@ -104,40 +104,36 @@
 - **改成预先造好题库（Jerry 的建议）：** 通用（graph_scm）和金融各 10 万张表，存成 h5（`make_prior_dump.py`）。训练改为从题库按比例抽题（`DumpMixedDataLoader`）：每批取题从 280 毫秒降到 1 到 3 毫秒，跨进程完全可复现，一次训练内不重复，不同 r 之间共用随机数。
 
 - **学习率验证：** r = 0、1000 步、各 3 个 seed。4e-3 坏了 1 次（累计 7 次坏 3 次），1e-3 三次都学会了。正式实验改用 1e-3。
-- **第一次正式对比（r = 0 vs r = 1，学习率 1e-3，seed 0）：没有交叉，纯金融模型在两套考卷上都更好。** 金融 AUC 0.732 vs 0.677（7/7 个数据集更好），通用 AUC 0.701 vs 0.674（13/17）。ECE 是纯通用略好。格式检查显示金融表上的领先约一半来自长尾数值格式，通用表上的领先不是。如果多个 seed 下仍成立，RQ1 的故事要从"领域和通用的取舍"改成"领域 prior 为什么连领域外都更好、混合能否两头都赢"。细节见 EXPERIMENT.md 4.6。
+- **第一次正式对比（r = 0 vs r = 1，学习率 1e-3，seed 0）：没有交叉，纯金融模型在两套考卷上都更好。** 金融 AUC 0.732 vs 0.677（7/7 个数据集更好），通用 AUC 0.701 vs 0.674（13/17）。ECE 是纯通用略好。格式检查显示金融表上的领先约一半来自长尾数值格式，通用表上的领先不是。如果多个 seed 下仍成立，RQ1 的故事要从"领域和通用的取舍"改成"领域 prior 为什么连领域外都更好、混合能否两头都赢"。细节见 EXPERIMENTS.md 4.6。
 
-- **七个 r（seed 0）跑完：曲线主要是训练噪声。** 金融和通用两条线同起同落，r = 0.5 到 0.9 三次训练整体偏弱；训练间差异可达 0.1 AUC，比要测的效应大 2 到 3 倍。"金融 − 通用"大体随 r 上升（0.002 到约 0.03），是领域效应的线索。结论：Mac 上训练量不够，转到 GPU（batch 32、训更久）。细节见 EXPERIMENT.md 4.7。
+- **七个 r（seed 0）跑完：曲线主要是训练噪声。** 金融和通用两条线同起同落，r = 0.5 到 0.9 三次训练整体偏弱；训练间差异可达 0.1 AUC，比要测的效应大 2 到 3 倍。"金融 − 通用"大体随 r 上升（0.002 到约 0.03），是领域效应的线索。结论：Mac 上训练量不够，转到 GPU（batch 32、训更久）。细节见 EXPERIMENTS.md 4.7。
 
 ### 2026-10-11（晚上）到 2026-10-12（上午）
 - **Colab T4 上的学习率验证（batch 32，r = 0，3000 步）：** 学习率 4e-3 跑完 3 个 seed，breast cancer AUC 0.987 / 0.986 / 0.983，训练全程平稳，没有崩（Mac 上 batch 8 时崩掉的 seed 2 这次也正常）。结论：batch 32 下用回原版的 4e-3，不再测 1e-3。T4 上一个模型约 37 分钟。健康检查表在 Drive 的 `tfm_prior/results/`，还没拿回来。
 - Colab 和 Mac 一致性：同一个模型评估分数完全相同；训练前几步的 loss 也完全相同。
 - Colab 免费额度用完。**2026-10-12 08:10 在 Mac 上启动正式实验的一部分**：batch 32、学习率 4e-3、3000 步、seed 0，r = 0、0.3、0.5、0.7、1（Mac 上每个约 85 分钟，预计 15:40 结束），跑完自动评估、健康检查、画图。日志 `logs/grid_bs32_lr0.004_steps3000.log`，结果 `results/bs32_lr0.004_steps3000/`，图 `figures/rq1_curves_bs32_lr0.004_steps3000.png`。
 
-- **batch 32 下的第一条曲线（seed 0，r = 0 / 0.3 / 0.5 / 0.7 / 1）：在真实表上没有取舍，纯通用 prior 在两套考卷上都最好。** 金融 AUC 0.781 → 0.761，通用 AUC 0.738 → 0.727（r 从 0 到 1）；r = 0 已经追平或超过随机森林。但在合成表上取舍清楚：金融合成表 0.630 → 0.672，通用合成表 0.724 → 0.707。说明模型学到了 FinTFM prior 的规律，但它们没迁移到真实金融表上。纯金融的 ECE 是其他的 2 倍多。金融表内部，消费信贷类变差最多（credit-g −0.098），财务比率型的破产数据基本不变。和 batch 8 时"r = 1 全面更好"的结论相反，那是训练不足造成的。细节见 EXPERIMENT.md 4.8。
+- **batch 32 下的第一条曲线（seed 0，r = 0 / 0.3 / 0.5 / 0.7 / 1）：在真实表上没有取舍，纯通用 prior 在两套考卷上都最好。** 金融 AUC 0.781 → 0.761，通用 AUC 0.738 → 0.727（r 从 0 到 1）；r = 0 已经追平或超过随机森林。但在合成表上取舍清楚：金融合成表 0.630 → 0.672，通用合成表 0.724 → 0.707。说明模型学到了 FinTFM prior 的规律，但它们没迁移到真实金融表上。纯金融的 ECE 是其他的 2 倍多。金融表内部，消费信贷类变差最多（credit-g −0.098），财务比率型的破产数据基本不变。和 batch 8 时"r = 1 全面更好"的结论相反，那是训练不足造成的。细节见 EXPERIMENTS.md 4.8。
+
+### 2026-10-13
+- **研究重心调整**（Jerry 的任务说明）：新假设是领域 prior 的价值取决于训练量和通用 prior 的强弱。论文主线改为：领域 prior 的价值如何随训练量 / 通用 prior 强弱变化（E1 到 E5），能否用 mixing law 预测（RQ2，E6），能否训练前预测（RQ3）。
+- **出现直接竞争者 CreditICL**（github.com/andreasgoethals/CreditICL，KU Leuven，MIT 许可）：在 TabICLv2 上扫 credit_fraction ∈ {0, 0.5, 1}，还没有结果。我们的区别在预算依赖、公式和预测指标。
+- **Phase A 重构完成**：库代码在 `src/tfmprior/`，一个实验一个 YAML（`configs/`），每次训练一个独立的 run 目录。重构前用旧代码记录了标准答案（`golden/`），新代码全部复现：题库逐字节一致；抽题 640 张表的来源和下标全部一致；评估指标差异 0（模型）和 4e-17（随机森林）；200 步训练的每一步 loss 和最终参数在 MPS 和 CPU 上都逐位一致。
+- 两个顺带的发现：MPS 本身可复现（同一设备两次训练逐位一致），但 MPS 和 CPU 从第 1 步就不同（第 7 位小数），200 步后 loss 差 0.017，所以"逐位一致"只在同一设备上比较；schedule-free 在 train / eval 模式之间来回切换在浮点上不完全可逆，所以重构前每 500 步评估一次的训练会被轻微扰动，新代码在存档后恢复训练参数的快照，存档不再改变训练轨迹（有测试）。
 
 ## 6. 下一步
 
-**2026-10-12 结果带来的新问题（要和 Jerry 讨论）：**
-- 如果多个 seed 下仍然是"纯通用最好"，RQ1 的故事要改：FinTFM 式的金融 prior 在强的通用 prior（TabICLv2）面前没有帮助，甚至有害；FinTFM 自己报告的收益（0.757 vs 0.708）可能是因为他的通用 prior 偏弱
-- 要先确认不是噪声：补 seed 1、2；或拿回 Colab 上 r = 0 三个 seed 的健康检查，估计 seed 间差异
-- 金融表内部的分化（破产 vs 消费信贷）值得单独看：金融 prior 只模拟了公司财报
+**Phase B（等 Jerry 确认 Phase A 后开始）：** 评估的三处改进（按互信息选特征、近领域考卷、逐数据集胜负）、新 prior（format_aug、credit_icl）、合成验证集、题库规模、E1 到 E6 的配置、汇总和画图。
 
-**马上要做：**
-1. **转到 GPU，用 Colab 的 T4**（[RUN_ON_GPU.md](RUN_ON_GPU.md)、[rq1_gpu.ipynb](rq1_gpu.ipynb)；公司邮件发不出代码包）：先确认环境和数据一致，再在 batch 32 下验证学习率、测训练噪声有多大。
-2. 噪声降到明显小于 r 效应后，跑 7 个 r 乘 3 个 seed。
-3. 查通用表上 r = 1 为什么也赢：候选是类别不平衡，或纯通用模型偏弱；对应的 ablation 是给通用 prior 加上不平衡、缺失和长尾。
+**Phase C：** 私有 GitHub 仓库、`docs/RUN_ON_SAGEMAKER.md`、`sweep.py` 并行。
 
 **要找 Bo 的：**
-- GPU 预算：Mac 上完整的 21 次约 12 小时，而且 batch 只能开到 8；GPU 上可以更快、训得更充分
-- BMO 对外发表的审批要多久（arXiv 也要过）
-
-**待决定：**
-- 4 个"银行但非信贷"的 TabArena 数据集放哪边（现在两边都不放）
-- "金融规律"和"格式差异"（不平衡、缺失、尺度）分不开，曲线出来后要设计 ablation
+- BMO 对外发表的审批要多久（arXiv 也要过）；CreditICL 出现后更急
+- 个人私有 GitHub 仓库传代码到 SageMaker 是否合规
 
 **之前提过但还没做的：**
 - 给 Bo 的 2 周计划一页纸
-- 每周 arXiv 监控竞争工作（关键词：tabular foundation model prior、domain prior、prior mixture）
+- 每周 arXiv 监控竞争工作（关键词：tabular foundation model prior、domain prior、prior mixture、CreditICL）
 - 修 reading list 的 venue（RAD-TFM、Explaining Data Mixing Scaling Laws 都是 ICML 2026 workshop）
 
 ## 7. 文献要点
@@ -169,6 +165,7 @@ Reading list（30 篇，5 张表）：https://claude.ai/code/artifact/dffb466c-9
 |---|---|---|
 | FinTFM（github.com/kabartay/fintfm） | 100% 金融 AUC 0.757 / ECE 0.0106；70/30 混合 AUC 0.751 / ECE 0.0042；纯通用 AUC 0.708。加 tree prior：通用 +0.0094，信贷 −0.0221。MITRA 式打分在金融上预测反了 | 个人项目，模型很弱（TabArena 第 93 到 94 名，共 95），很多对比只有 1 个 seed |
 | RAD-TFM（IBM / MIT，ICML 2026 workshop） | 只调通用 generator 的旋钮：64 个元特征加 Wasserstein 对齐目标领域，再按"比 XGBoost 差多少"加权抽题。normalized AUC 最多 +0.12，原始 AUC 只有 +0.3% 到 +2.1% | "领域"就是测试 benchmark 本身；没测领域外代价；两步没拆开 |
+| **CreditICL**（KU Leuven，github.com/andreasgoethals/CreditICL，MIT 许可；2026-10-13 发现） | 在 TabICLv2 上加入信贷 PD prior，扫 credit_fraction ∈ {0, 0.5, 1}；**直接竞争者**，还没有结果 | 只有 3 个比例，没有训练量维度，没有公式 |
 | KnowsTFM, arXiv 2606.30258 | 微调时用知识图谱加 attention bias：小模型 0.741 → 0.768；大模型一微调就变差（TabPFN v2.6：0.892 → 0.862） | 是微调不是 prior；生物医学领域 |
 
 ### 7.4 LLM 的 data mixing law
@@ -184,7 +181,7 @@ Reading list（30 篇，5 张表）：https://claude.ai/code/artifact/dffb466c-9
 
 | 文件 | 在哪 |
 |---|---|
-| RQ1 实验说明 | [EXPERIMENT.md](EXPERIMENT.md) |
+| RQ1 实验说明 | [EXPERIMENTS.md](EXPERIMENTS.md) |
 | 给 Bo 讲的 deck（21 页） | `TFM_Prior_deck.pptx`（repo 根目录，不进 git，因为是 BMO 内部材料） |
 | 讲稿 | `Bo_meeting_script.md / .pdf`（Jerry 手上） |
 | handoff 文档 | claude.ai 项目 "Research & Product" 里的 `TFM prior handoff` |
