@@ -1,188 +1,186 @@
-# TFM Prior 研究总文档
+# TFM prior research: overview
 
-最后更新：2026-10-13。
+Last updated: 2026-10-13.
 
-这是整个研究的总入口：课题、研究问题、计划、进展和文献。RQ1 实验的具体设计、代码和数字在 [EXPERIMENTS.md](EXPERIMENTS.md)。
-每次有进展，两份文档都要更新：新进展写进第 5 节的日志，实验细节写进 EXPERIMENTS.md。
+This is the entry point for the whole project: topic, research questions, plan, progress and literature. Experiment design, code and numbers are in [EXPERIMENTS.md](EXPERIMENTS.md).
+Both documents are updated with every step forward: new progress goes into the log in section 5, experiment details into EXPERIMENTS.md.
 
-## 1. 背景
+## 1. Background
 
-- **人：** Jerry Li（ML Engineer，BMO Institute for Applied AI & Quantum），汇报给 Bo Zhao（赵博，Tech Lead）。
-- **两个目标：**
-  1. **产品：** Bo 的 "drag-a-table"：BMO 任何团队拖一张表进来，就能用 tabular foundation model（TFM）得到预测。
-  2. **论文：** 通过团队的研究职能发一篇顶会论文。BMO 允许发表，前提是不和外部合作。
-- **数据规则：** 论文只能用公开数据。BMO 内部的表可以用来验证产品，但不能写进论文。
-- **2026-10-08：** Jerry 给 Bo 讲了 deck。Bo 喜欢这个课题，认为有机会；他的直觉是模型要像人一样，同时有通用知识和领域知识才能做到最好。要求动作要快。
+- **People:** Jerry Li (ML Engineer, BMO Institute for Applied AI & Quantum), reporting to Bo Zhao (Tech Lead).
+- **Two goals:**
+  1. **Product:** Bo's "drag-a-table": any BMO team drops in a table and gets predictions from a tabular foundation model (TFM).
+  2. **Paper:** a top-conference paper through the team's research mandate. BMO allows publishing as long as there is no external collaboration.
+- **Data rule:** the paper uses public data only. BMO internal tables may validate the product but cannot appear in the paper.
+- **2026-10-08:** Jerry presented the deck to Bo. Bo likes the topic and thinks it has a real chance; his intuition is that, like a person, a model needs both general and domain knowledge to do best. He asked to move fast.
 
-## 2. 研究课题
+## 2. Research topic
 
-**一句话：** 把 LLM 的 data mixing law 搬到 TFM 的 prior 上。研究金融 prior 和通用 prior 混多少的取舍曲线，给出一个公式，并找一个训练前就能算的指标来预测它。
+**In one line:** bring LLM data mixing laws to TFM priors. Study the tradeoff curve of mixing a finance prior with a generic prior, fit a law for it, and find a metric that predicts it before training.
 
-| | 问题 | 做法 |
+| | Question | Approach |
 |---|---|---|
-| **RQ1** | 曲线存在吗？ | 金融 prior 的比例 r 从 0% 到 100%，金融表提升多少，通用表损失多少 |
-| **RQ2** | 能用公式预测吗？ | 用小模型和少数几个比例拟合（参考 Ye et al. 的 L = c + k·exp(t·r)），外推到大模型和没试过的比例 |
-| **RQ3** | 能不训练就预测吗？ | 用"像不像金融"和"够不够多样"两个指标，训练前估出最优比例 |
+| **RQ1** | Does the curve exist? | Finance share r from 0% to 100%: how much do finance tables gain and general tables lose |
+| **RQ2** | Can a law predict it? | Fit on small models and a few ratios (following Ye et al.'s L = c + k·exp(t·r)), extrapolate to larger models and unseen ratios |
+| **RQ3** | Can it be predicted without training? | Estimate the best ratio before training from two metrics: how finance-like and how diverse the prior is |
 
-**冲主会的标准：** 只做 RQ1 是 workshop 级别（和 Hutter 组、CSIRO 一样）。做到 RQ2 和 RQ3 才是 Ye、Apple 那一层。这个方向的主会论文都有三样东西：能预测的公式、在没试过的设置上验证过的外推、实际节省了多少。
+**Bar for a main conference:** RQ1 alone is workshop level (like the Hutter group and CSIRO). RQ2 and RQ3 reach the level of Ye and Apple. Main-conference papers in this area all have three things: a predictive formula, extrapolation validated on unseen settings, and a concrete saving.
 
-**要小心的地方：** "混合比纯用好"太直觉，审稿人可能觉得显然。论文的价值必须在 (1) 最优点在哪、怎么算（RQ2），(2) 反直觉的发现，比如 FinTFM 的 tree prior 让通用表变好、金融表变差。
+**Caution:** "mixing beats pure" is intuitive, so reviewers may find it obvious. The paper's value must lie in (1) where the optimum is and how to compute it (RQ2), and (2) non-obvious findings, such as FinTFM's tree prior improving general tables while hurting finance tables.
 
-**和已有工作的区别：**
+**How we differ from existing work:**
 
-| 工作 | 它的局限 |
+| Work | Its limitation |
 |---|---|
-| FinTFM | 只试了 3 个比例、1 个 seed，没有公式 |
-| RAD-TFM | 只看领域内的收益，没测领域外的代价 |
-| MITRA | 凭经验标准挑一个通用混合，不预测领域取舍；FinTFM 发现它的标准在信贷数据上预测反了 |
-| Ye、Apple | 有公式，但只针对 LLM；LLM 数据有限，我们的 prior 可以无限造题 |
+| FinTFM | Only 3 ratios, 1 seed, no law |
+| RAD-TFM | Measures in-domain gains only, never the out-of-domain cost |
+| MITRA | Picks one generic mixture by heuristic criteria and does not predict domain tradeoffs; FinTFM found its criteria predicted the wrong direction on credit data |
+| Ye, Apple | Have a law, but for LLMs only; LLM data is finite, while our priors generate unlimited tables |
 
-**对产品的意义：** 答案直接决定 drag-a-table 是只做一个通用模型，还是再加金融版本，以及金融版本混多少。
+**What it means for the product:** the answer decides whether drag-a-table ships one generic model or also a finance version, and how much finance that version mixes in.
 
-**风险：** Bristol 发现合成数据和真实数据的差距对性能没有明显影响；Hutter 组发现相似度只能部分解释性能。如果曲线是平的，这本身也是发现，但要重新考虑冲主会的目标。
+**Risks:** Bristol found that the gap between synthetic and real data has no clear effect on performance; the Hutter group found that similarity explains performance only partly. A flat curve would itself be a finding, but the main-conference target would need rethinking.
 
-## 3. 方法概要
+## 3. Method in brief
 
-**Prior** 是一段随机造练习题的程序：每次随机抽一条规则（一个从不训练的随机小模型），按规则造一张表。TFM 在几百万张这样的表上练习"看几行带答案的例子，猜出规则，预测新行"，即 in-context learning。不同的 prior 就是对"真实世界的规律长什么样"的不同假设。
+A **prior** is a program that generates random practice tasks: each time it draws a random rule (a small random model that is never trained) and builds a table from it. A TFM practices on millions of such tables: "look at a few labelled example rows, guess the rule, predict new rows", i.e. in-context learning. Different priors are different assumptions about what real-world patterns look like.
 
-**我们的实验（RQ1 pilot），细节见 [EXPERIMENTS.md](EXPERIMENTS.md)：**
+**Our experiments (the RQ1 pilot), details in [EXPERIMENTS.md](EXPERIMENTS.md):**
 
-| 项目 | 设定 |
+| Item | Setting |
 |---|---|
-| 模型 | nanoTabPFN，约 36 万参数，固定不变，每次从头训练 |
-| 通用 prior | TabICLv2 的 prior（`graph_scm`） |
-| 金融 prior | FinTFM 的金融 prior（财报、财务比率、低违约率） |
-| 唯一的变量 | 金融题比例 r ∈ {0, 0.1, 0.3, 0.5, 0.7, 0.9, 1}，每个 r 跑 3 个 seed，共 21 次训练 |
-| 考卷 | TabArena 的二分类任务：金融 7 个（信贷、违约、破产），通用 17 个 |
-| 指标 | AUC（排序能力）、ECE 和 Brier（概率准不准） |
-| 硬件 | 目前用 Jerry 的 Mac（16 GB，MPS），每次训练约 35 分钟 |
+| Model | nanoTabPFN, about 0.36M parameters, fixed architecture, trained from scratch every time |
+| Generic prior | TabICLv2's prior (`graph_scm`) |
+| Finance prior | FinTFM's finance prior (financial statements, financial ratios, low default rates) |
+| The only variable | Finance share r ∈ {0, 0.1, 0.3, 0.5, 0.7, 0.9, 1}, 3 seeds per r, 21 runs in total |
+| Benchmark suites | Binary tasks from TabArena: 7 finance (credit, default, bankruptcy), 17 general |
+| Metrics | AUC (ranking), ECE and Brier (calibration) |
+| Hardware | So far Jerry's Mac (16 GB, MPS), about 35 minutes per run |
 
-## 4. 时间线
+## 4. Timeline
 
-**截稿日期（2026-10-08 查）：** ICLR 2027（9 月 25 日）和 AISTATS 2027（10 月 6 日）已过。ICML 2027 预计约 2027-01-22（摘要约早一周；尚未官宣；会议在南美）。NeurIPS 2027 预计约 2027-05-21。KDD 2027 cycle 2 约 2027 年 2 月，UAI 2027 约 2027-02-12。ICML/ICLR 的 workshop 是保底。
+**Deadlines (checked 2026-10-08):** ICLR 2027 (Sep 25) and AISTATS 2027 (Oct 6) have passed. ICML 2027 expected around 2027-01-22 (abstract about a week earlier; not yet announced; held in South America). NeurIPS 2027 expected around 2027-05-21. KDD 2027 cycle 2 around February 2027, UAI 2027 around 2027-02-12. ICML/ICLR workshops are the fallback.
 
-**按 ICML 倒推：**
+**Working back from ICML:**
 
-| 时间 | 任务 |
+| When | What |
 |---|---|
-| 10 月 | pilot：RQ1 |
-| 11 月到 12 月中 | RQ2 |
-| 12 月中到 1 月中 | 写论文，RQ3 尽量做 |
-| 约 1 月 22 日 | 投稿 |
+| October | Pilot: RQ1 |
+| November to mid-December | RQ2 |
+| Mid-December to mid-January | Write the paper; RQ3 as far as possible |
+| Around January 22 | Submit |
 
-**arXiv 策略：** RQ1 和 RQ2 都成立后（约 12 月）挂 arXiv 占坑；如果出现很接近的竞争工作就提前挂。只有 RQ1 时不挂：太薄，还会暴露方向。
+**arXiv strategy:** post once RQ1 and RQ2 both hold (around December) to establish priority; post earlier if a very close competitor appears. Do not post with RQ1 only: too thin, and it would reveal the direction.
 
-## 5. 进展日志
+## 5. Progress log
 
 ### 2026-10-08
-- 给 Bo 讲了 deck（21 页）和讲稿，Bo 同意方向，要求快。
-- 写了 handoff 文档，开新对话接手。
+- Presented the deck (21 slides) and talking script to Bo; Bo agreed with the direction and asked to move fast.
+- Wrote a handoff document and continued in a new conversation.
 
 ### 2026-10-09
-- 读了 FinTFM、TabICL、TFM-Playground 的源码，确定 prior 的接法：通用用 TabICL，金融只拿 FinTFM 的金融部分，混合器自己写。不用 FinTFM 自带的混合器，因为它的 tree prior 从金融预算里扣，`p_financial` 不等于真实的金融占比。
-- 写了 prior 混合、拼 batch、训练入口；Mac 上跑通。
-- 踩坑：TabICL 用了 Python 的 `random` 模块，导致不可复现，已修；Mac GPU 按 batch 形状缓存显存会爆，已修（限制 batch 形状）。
-- 发现：两个 prior 的表很不一样，金融表 56% 正例低于 5%、有 8% 缺失值、数值可到 1e12；通用表几乎平衡、无缺失。
-- 发现：256 行乘 24 特征的大表训 600 步时极不稳定（两个 seed 的 AUC 是 0.226 和 0.877）。
+- Read the source of FinTFM, TabICL and TFM-Playground and settled how to plug in the priors: TabICL for the generic prior, only the finance part of FinTFM for the finance prior, and our own mixer. FinTFM's own mixer was not used because its tree prior takes its share out of the finance budget, so `p_financial` is not the real finance share.
+- Wrote the prior mixing, batch assembly and training entry point; ran end to end on the Mac.
+- Pitfalls: TabICL uses Python's `random` module, which broke reproducibility (fixed); the Mac GPU caches memory per batch shape and ran out of memory (fixed by limiting batch shapes).
+- Finding: the two priors' tables look very different. 56% of finance tables have under 5% positives, finance tables have 8% missing values and values up to 1e12; generic tables are nearly balanced with no missing values.
+- Finding: 256-row, 24-feature tables trained for 600 steps were very unstable (AUC 0.226 and 0.877 for two seeds).
 
 ### 2026-10-10
-- Jerry 批准 5 项决定（见 EXPERIMENTS.md 第 5 节），其中通用 prior 换成 TabICLv2 的 `graph_scm`。
-- **修了原版 train.py 的 bug：** schedule-free 优化器训练结束时没切到 eval 模式，保存和评估的都是训练参数。之前的结果都受影响。
-- 做好两套考卷和评估脚本。随机森林参考线：金融 AUC 0.779，通用 AUC 0.734。
-- 写好 `run_grid.py`（批量训练加评估）和 `plot_curves.py`（画取舍曲线）。
-- **方案 (a) 通过：** 256 乘 24、3000 步，两个 seed 的 breast cancer AUC 是 0.977 和 0.982，训练稳定；在没见过的合成表上 AUC 0.69 到 0.70，接近随机森林的 0.707。
+- Jerry approved 5 decisions (EXPERIMENTS.md section 5), including switching the generic prior to TabICLv2's `graph_scm`.
+- **Fixed a bug in the original train.py:** the schedule-free optimizer was not switched to eval mode at the end of training, so saving and evaluation used the training weights. All earlier results were affected.
+- Built the two benchmark suites and the evaluation script. Random forest reference: finance AUC 0.779, general AUC 0.734.
+- Wrote `run_grid.py` (batch training plus evaluation) and `plot_curves.py` (tradeoff curves).
+- **Plan (a) passed:** 256 x 24, 3000 steps, breast cancer AUC 0.977 and 0.982 for two seeds, stable training; AUC 0.69 to 0.70 on unseen synthetic tables, close to the random forest's 0.707.
 
-### 2026-10-11（凌晨）
-- 发现并修复 `run_grid.py` 会误用旧 checkpoint 的问题。
-- r = 0 和 r = 1 的实验启动后，因为要关机停掉了，明早重跑。
-- 建立本文档（RESEARCH.md），代码做了第一次 git commit。
+### 2026-10-11 (early morning)
+- Found and fixed `run_grid.py` reusing a stale checkpoint.
+- Started r = 0 and r = 1, then stopped them because the machine had to be shut down; rerun the next morning.
+- Created this document; first git commit of the code.
 
-### 2026-10-11（上午）
-- 跑了 r = 0 和 r = 1（现场造题，3000 步，batch 8，学习率 4e-3）。**r = 0 训练中途崩了**：loss 卡在 0.69（ln 2），所有考卷 AUC 0.50。r = 1 正常：金融 AUC 0.744，通用 AUC 0.717（随机森林 0.779 / 0.734）。这组结果不可复现，已归档到 `checkpoints/onthefly_prehashfix_2026-10-11/`，不作结论。
-- **发现可复现性 bug：** TabICL 的输出依赖 Python 每个进程的哈希种子，同一个 seed 在不同进程里造出不同的表。已修（`priors/__init__.py` 自动固定 `PYTHONHASHSEED`）。所以方案 (a) 的成功和今天的崩溃其实看到的是不同数据。
-- **训练不稳定：** 256 乘 24 的表、batch 8、学习率 4e-3，4 次训练里坏了 2 次。推测原因：学习率 4e-3 是原版配 batch 32 的，batch 降到 8 没跟着降。
-- **改成预先造好题库（Jerry 的建议）：** 通用（graph_scm）和金融各 10 万张表，存成 h5（`make_prior_dump.py`）。训练改为从题库按比例抽题（`DumpMixedDataLoader`）：每批取题从 280 毫秒降到 1 到 3 毫秒，跨进程完全可复现，一次训练内不重复，不同 r 之间共用随机数。
+### 2026-10-11 (morning)
+- Ran r = 0 and r = 1 (tables generated on the fly, 3000 steps, batch 8, lr 4e-3). **The r = 0 run collapsed midway:** loss stuck at 0.69 (ln 2), AUC 0.50 on every suite. r = 1 was fine: finance AUC 0.744, general AUC 0.717 (random forest 0.779 / 0.734). Not reproducible; archived as `checkpoints/onthefly_prehashfix_2026-10-11/` and not used for conclusions.
+- **Found a reproducibility bug:** TabICL's output depends on Python's per-process hash seed, so the same seed produced different tables in different processes. Fixed (`PYTHONHASHSEED` is fixed automatically). Plan (a)'s success and this collapse had therefore seen different data.
+- **Unstable training:** 256 x 24 tables, batch 8, lr 4e-3: 2 of 4 runs failed. Likely cause: lr 4e-3 was tuned for batch 32 in the original nanoTabPFN and was not lowered when the batch went down to 8.
+- **Switched to pre-generated pools (Jerry's suggestion):** 100k tables each of generic (graph_scm) and finance, stored as h5 (`make_prior_dump.py`). Training now draws from the pools by ratio (`DumpMixedDataLoader`): 1 to 3 ms per batch instead of 280 ms, fully reproducible across processes, no table repeated within a run, and common random numbers across r.
+- **Learning-rate check:** r = 0, 1000 steps, 3 seeds each. 4e-3 failed once (3 of 7 overall); 1e-3 learned in all three runs. Formal runs switched to 1e-3.
+- **First formal comparison (r = 0 vs r = 1, lr 1e-3, seed 0): no crossover; the pure finance model was better on both suites.** Finance AUC 0.732 vs 0.677 (better on 7/7 datasets), general AUC 0.701 vs 0.674 (13/17). ECE slightly better for pure generic. A format check showed that about half of the lead on finance tables came from heavy-tailed value scales, but not the lead on general tables. Details in EXPERIMENTS.md 4.6.
+- **Seven r values (seed 0): the curve is mostly training noise.** Finance and general lines rose and fell together; the three runs at r = 0.5 to 0.9 were weaker across the board; differences between runs reached 0.1 AUC, two to three times the effect being measured. "Finance minus general" rose roughly with r (0.002 to about 0.03), a hint of a domain effect. Conclusion: not enough training on the Mac; move to a GPU (batch 32, longer). Details in EXPERIMENTS.md 4.7.
 
-- **学习率验证：** r = 0、1000 步、各 3 个 seed。4e-3 坏了 1 次（累计 7 次坏 3 次），1e-3 三次都学会了。正式实验改用 1e-3。
-- **第一次正式对比（r = 0 vs r = 1，学习率 1e-3，seed 0）：没有交叉，纯金融模型在两套考卷上都更好。** 金融 AUC 0.732 vs 0.677（7/7 个数据集更好），通用 AUC 0.701 vs 0.674（13/17）。ECE 是纯通用略好。格式检查显示金融表上的领先约一半来自长尾数值格式，通用表上的领先不是。如果多个 seed 下仍成立，RQ1 的故事要从"领域和通用的取舍"改成"领域 prior 为什么连领域外都更好、混合能否两头都赢"。细节见 EXPERIMENTS.md 4.6。
-
-- **七个 r（seed 0）跑完：曲线主要是训练噪声。** 金融和通用两条线同起同落，r = 0.5 到 0.9 三次训练整体偏弱；训练间差异可达 0.1 AUC，比要测的效应大 2 到 3 倍。"金融 − 通用"大体随 r 上升（0.002 到约 0.03），是领域效应的线索。结论：Mac 上训练量不够，转到 GPU（batch 32、训更久）。细节见 EXPERIMENTS.md 4.7。
-
-### 2026-10-11（晚上）到 2026-10-12（上午）
-- **Colab T4 上的学习率验证（batch 32，r = 0，3000 步）：** 学习率 4e-3 跑完 3 个 seed，breast cancer AUC 0.987 / 0.986 / 0.983，训练全程平稳，没有崩（Mac 上 batch 8 时崩掉的 seed 2 这次也正常）。结论：batch 32 下用回原版的 4e-3，不再测 1e-3。T4 上一个模型约 37 分钟。健康检查表在 Drive 的 `tfm_prior/results/`，还没拿回来。
-- Colab 和 Mac 一致性：同一个模型评估分数完全相同；训练前几步的 loss 也完全相同。
-- Colab 免费额度用完。**2026-10-12 08:10 在 Mac 上启动正式实验的一部分**：batch 32、学习率 4e-3、3000 步、seed 0，r = 0、0.3、0.5、0.7、1（Mac 上每个约 85 分钟，预计 15:40 结束），跑完自动评估、健康检查、画图。日志 `logs/grid_bs32_lr0.004_steps3000.log`，结果 `results/bs32_lr0.004_steps3000/`，图 `figures/rq1_curves_bs32_lr0.004_steps3000.png`。
-
-- **batch 32 下的第一条曲线（seed 0，r = 0 / 0.3 / 0.5 / 0.7 / 1）：在真实表上没有取舍，纯通用 prior 在两套考卷上都最好。** 金融 AUC 0.781 → 0.761，通用 AUC 0.738 → 0.727（r 从 0 到 1）；r = 0 已经追平或超过随机森林。但在合成表上取舍清楚：金融合成表 0.630 → 0.672，通用合成表 0.724 → 0.707。说明模型学到了 FinTFM prior 的规律，但它们没迁移到真实金融表上。纯金融的 ECE 是其他的 2 倍多。金融表内部，消费信贷类变差最多（credit-g −0.098），财务比率型的破产数据基本不变。和 batch 8 时"r = 1 全面更好"的结论相反，那是训练不足造成的。细节见 EXPERIMENTS.md 4.8。
+### 2026-10-11 (evening) to 2026-10-12 (morning)
+- **Learning-rate check on a Colab T4 (batch 32, r = 0, 3000 steps):** lr 4e-3 completed 3 seeds with breast cancer AUC 0.987 / 0.986 / 0.983 and smooth training, no collapse (seed 2, which collapsed on the Mac at batch 8, was fine). Conclusion: back to the original 4e-3 at batch 32; 1e-3 no longer tested. About 37 minutes per run on a T4. The health-check table is in Drive under `tfm_prior/results/` and has not been retrieved.
+- Colab and Mac agree: the same model gets identical evaluation scores, and the first training steps have identical losses.
+- Colab's free quota ran out. **Started part of the formal experiment on the Mac on 2026-10-12 at 08:10:** batch 32, lr 4e-3, 3000 steps, seed 0, r = 0, 0.3, 0.5, 0.7, 1 (about 85 minutes each on the Mac), with automatic evaluation, health checks and plots.
+- **First curve at batch 32 (seed 0, r = 0 / 0.3 / 0.5 / 0.7 / 1): no tradeoff on real tables; the pure generic prior is best on both suites.** Finance AUC 0.781 → 0.761, general AUC 0.738 → 0.727 as r goes from 0 to 1; r = 0 matches or beats the random forest. On synthetic tables the tradeoff is clear: finance synthetic 0.630 → 0.672, generic synthetic 0.724 → 0.707. The model learns the FinTFM prior's patterns, but they do not transfer to real finance tables. Pure finance has more than twice the ECE of the others. Within the finance suite, consumer credit suffers most (credit-g −0.098) while ratio-based bankruptcy data barely changes. This reverses the batch-8 conclusion that r = 1 wins everywhere, which came from undertraining. Details in EXPERIMENTS.md 4.8.
 
 ### 2026-10-13
-- **研究重心调整**（Jerry 的任务说明）：新假设是领域 prior 的价值取决于训练量和通用 prior 的强弱。论文主线改为：领域 prior 的价值如何随训练量 / 通用 prior 强弱变化（E1 到 E5），能否用 mixing law 预测（RQ2，E6），能否训练前预测（RQ3）。
-- **出现直接竞争者 CreditICL**（github.com/andreasgoethals/CreditICL，KU Leuven，MIT 许可）：在 TabICLv2 上扫 credit_fraction ∈ {0, 0.5, 1}，还没有结果。我们的区别在预算依赖、公式和预测指标。
-- **Phase A 重构完成**：库代码在 `src/tfmprior/`，一个实验一个 YAML（`configs/`），每次训练一个独立的 run 目录。重构前用旧代码记录了标准答案（`golden/`），新代码全部复现：题库逐字节一致；抽题 640 张表的来源和下标全部一致；评估指标差异 0（模型）和 4e-17（随机森林）；200 步训练的每一步 loss 和最终参数在 MPS 和 CPU 上都逐位一致。
-- 两个顺带的发现：MPS 本身可复现（同一设备两次训练逐位一致），但 MPS 和 CPU 从第 1 步就不同（第 7 位小数），200 步后 loss 差 0.017，所以"逐位一致"只在同一设备上比较；schedule-free 在 train / eval 模式之间来回切换在浮点上不完全可逆，所以重构前每 500 步评估一次的训练会被轻微扰动，新代码在存档后恢复训练参数的快照，存档不再改变训练轨迹（有测试）。
+- **Change of focus** (Jerry's task spec): the new hypothesis is that a domain prior's value depends on the training budget and on the strength of the generic prior. The paper's main line becomes: how does a domain prior's value change with training budget and generic-prior strength (E1 to E5), can a mixing law predict it (RQ2, E6), and can it be predicted before training (RQ3).
+- **A direct competitor appeared, CreditICL** (github.com/andreasgoethals/CreditICL, KU Leuven, MIT license): sweeps credit_fraction ∈ {0, 0.5, 1} on TabICLv2, no results yet. We differ in budget dependence, the law and the predictive metric.
+- **Phase A refactor done:** library code in `src/tfmprior/`, one YAML per experiment (`configs/`), one directory per training run. Golden answers were recorded with the old code before the refactor (`golden/`) and the new code reproduces all of them: pools byte-identical; source and pool index of all 640 sampled tables identical; evaluation differences 0 (model) and 4e-17 (random forest); every step's loss and the final parameters of a 200-step run identical bit for bit on both MPS and CPU.
+- Two side findings: MPS reproduces itself (two runs on the same device are identical bit for bit), but MPS and CPU differ from step 1 (7th decimal) and by 0.017 in loss after 200 steps, so bit-identity is only checked on the same device. Switching schedule-free between train and eval mode is not exactly invertible in floating point, so the pre-refactor runs that evaluated every 500 steps were slightly perturbed; the new code restores a snapshot of the training weights after each checkpoint, so checkpoints no longer change the trajectory (covered by a test).
+- Code pushed to github.com/X66YSH/PriorResearch (public); the prior pools are assets of its release `pools-v1`. Repo content is English only.
 
-## 6. 下一步
+## 6. Next steps
 
-**Phase B（等 Jerry 确认 Phase A 后开始）：** 评估的三处改进（按互信息选特征、近领域考卷、逐数据集胜负）、新 prior（format_aug、credit_icl）、合成验证集、题库规模、E1 到 E6 的配置、汇总和画图。
+**Phase B (after Jerry confirms Phase A):** three evaluation improvements (mutual-information feature selection, near-domain suite, per-dataset wins and losses), new priors (format_aug, credit_icl), synthetic validation sets, pool sizes, E1 to E6 configs, aggregation and plots.
 
-**Phase C：** 私有 GitHub 仓库、`docs/RUN_ON_SAGEMAKER.md`、`sweep.py` 并行。
+**Phase C:** `docs/RUN_ON_SAGEMAKER.md`, parallel runs with `sweep.py`.
 
-**要找 Bo 的：**
-- BMO 对外发表的审批要多久（arXiv 也要过）；CreditICL 出现后更急
-- 个人私有 GitHub 仓库传代码到 SageMaker 是否合规
+**To raise with Bo:**
+- How long BMO's external publication approval takes (arXiv needs it too); more urgent now that CreditICL exists
+- Whether moving code to SageMaker through a personal GitHub repo is compliant
 
-**之前提过但还没做的：**
-- 给 Bo 的 2 周计划一页纸
-- 每周 arXiv 监控竞争工作（关键词：tabular foundation model prior、domain prior、prior mixture、CreditICL）
-- 修 reading list 的 venue（RAD-TFM、Explaining Data Mixing Scaling Laws 都是 ICML 2026 workshop）
+**Offered earlier, not done yet:**
+- A one-page two-week plan for Bo
+- A weekly arXiv watch for competing work (keywords: tabular foundation model prior, domain prior, prior mixture, CreditICL)
+- Fix the venues in the reading list (RAD-TFM and Explaining Data Mixing Scaling Laws are both ICML 2026 workshop papers)
 
-## 7. 文献要点
+## 7. Literature
 
-Reading list（30 篇，5 张表）：https://claude.ai/code/artifact/dffb466c-9356-481c-9271-2ad03385c84f
+Reading list (30 sources, 5 tables): https://claude.ai/code/artifact/dffb466c-9356-481c-9271-2ad03385c84f
 
-### 7.1 Prior 基础
+### 7.1 Prior basics
 
-| 论文 | 要点 |
+| Paper | Key point |
 |---|---|
-| Müller et al., ICLR 2022 | PFN 理论：在 prior 生成的任务上训练 = 学习贝叶斯推断 |
-| TabPFN, ICLR 2023 / Nature 2025 | 第一个把这个思路做成表格模型 |
-| Prior vs synthetic data generation（CTGAN、TabDDPM） | 一个"出题"，一个"复印"。没有论文直接比较用 CTGAN 数据和用 prior 预训练 TFM |
-| Hutter 组，ICML 2026 workshop | 同样的真实表，每张只出 1 种题排最后；随机换 y 出很多题好很多 |
-| Ma et al., arXiv 2511.09665 | 一张真实表换不同的 y 和特征子集造很多任务，也能学到泛化 |
+| Müller et al., ICLR 2022 | PFN theory: training on prior-generated tasks amounts to learning Bayesian inference |
+| TabPFN, ICLR 2023 / Nature 2025 | First to turn this idea into a tabular model |
+| Prior vs synthetic data generation (CTGAN, TabDDPM) | One "writes new problems", the other "copies". No paper directly compares pretraining a TFM on CTGAN data with pretraining on a prior |
+| Hutter group, ICML 2026 workshop | On the same real tables, one task per table ranks last; random targets with many tasks per table do much better |
+| Ma et al., arXiv 2511.09665 | One real table turned into many tasks (different y and feature subsets) already teaches generalization |
 
-### 7.2 prior 像真实数据，有没有用
+### 7.2 Does a prior that looks like real data help?
 
-| 论文 | 怎么测"像不像" | 发现 | 局限 |
+| Paper | How "looks like" is measured | Finding | Limitation |
 |---|---|---|---|
-| CSIRO, arXiv 2609.06912 | 21 个手工统计量，k-NN 覆盖率 | TabICLv2 覆盖最好、表现最好；72% 到 86% 的数据集上"越像越好" | 只是相关，prior 和模型结构一起变 |
-| Hutter 组, arXiv 2606.29241 | 手工统计量，prior 之间的相似度 | 固定 nanoTabPFN、换 11 个 prior：prior 有影响但不大；相似度只能部分预测性能 | 小模型，16 个数据集 |
-| Bristol, arXiv 2605.06343 | 判别器 AUC，k-NN 覆盖 | TabICL 的 prior 和真实表几乎 100% 能分开；调 8.6 万组参数也拉不近；但差距和性能没有明显关系 | 只分析分布，没训新模型 |
-| MIT, arXiv 2603.04692 | TabPFN 2.5 的 embedding 加 XGBoost 判别器 | 挑 200 张最像工程领域的合成表继续训，35 个工程数据集里 29 个变好 | 没有随机挑选的对照，没测通用能力 |
+| CSIRO, arXiv 2609.06912 | 21 handcrafted statistics, k-NN coverage | TabICLv2 covers real tables best and performs best; "closer is better" on 72% to 86% of datasets | Correlation only; prior and architecture change together |
+| Hutter group, arXiv 2606.29241 | Handcrafted statistics, similarity between priors | Fixed nanoTabPFN with 11 priors: the prior matters, but modestly; similarity only partly predicts performance | Small model, 16 datasets |
+| Bristol, arXiv 2605.06343 | Discriminator AUC, k-NN coverage | TabICL's prior is almost perfectly separable from real tables, and 86k configurations cannot close the gap; yet the gap shows no clear link to performance | Distribution analysis only, no new models trained |
+| MIT, arXiv 2603.04692 | TabPFN 2.5 embeddings plus an XGBoost discriminator | Continued training on the 200 most engineering-like synthetic tables improved 29 of 35 engineering datasets | No random-selection control; general ability not tested |
 
-### 7.3 领域 prior 和它的代价
+### 7.3 Domain priors and their cost
 
-| 工作 | 要点 | 局限 |
+| Work | Key point | Limitation |
 |---|---|---|
-| FinTFM（github.com/kabartay/fintfm） | 100% 金融 AUC 0.757 / ECE 0.0106；70/30 混合 AUC 0.751 / ECE 0.0042；纯通用 AUC 0.708。加 tree prior：通用 +0.0094，信贷 −0.0221。MITRA 式打分在金融上预测反了 | 个人项目，模型很弱（TabArena 第 93 到 94 名，共 95），很多对比只有 1 个 seed |
-| RAD-TFM（IBM / MIT，ICML 2026 workshop） | 只调通用 generator 的旋钮：64 个元特征加 Wasserstein 对齐目标领域，再按"比 XGBoost 差多少"加权抽题。normalized AUC 最多 +0.12，原始 AUC 只有 +0.3% 到 +2.1% | "领域"就是测试 benchmark 本身；没测领域外代价；两步没拆开 |
-| **CreditICL**（KU Leuven，github.com/andreasgoethals/CreditICL，MIT 许可；2026-10-13 发现） | 在 TabICLv2 上加入信贷 PD prior，扫 credit_fraction ∈ {0, 0.5, 1}；**直接竞争者**，还没有结果 | 只有 3 个比例，没有训练量维度，没有公式 |
-| KnowsTFM, arXiv 2606.30258 | 微调时用知识图谱加 attention bias：小模型 0.741 → 0.768；大模型一微调就变差（TabPFN v2.6：0.892 → 0.862） | 是微调不是 prior；生物医学领域 |
+| FinTFM (github.com/kabartay/fintfm) | 100% finance AUC 0.757 / ECE 0.0106; 70/30 mix AUC 0.751 / ECE 0.0042; generic only AUC 0.708. Adding a tree prior: general +0.0094, credit −0.0221. A MITRA-style scorer predicted the wrong direction on finance | One-person project, weak model (rank 93 to 94 of 95 on TabArena), many comparisons with a single seed |
+| RAD-TFM (IBM / MIT, ICML 2026 workshop) | Only re-weights the knobs of a generic generator: 64 meta-features plus Wasserstein alignment to a target domain, then sampling weighted by how far it trails XGBoost. Normalized AUC up to +0.12, raw AUC only +0.3% to +2.1% | The "domain" is the test benchmark itself; out-of-domain cost never measured; the two steps are not ablated |
+| **CreditICL** (KU Leuven, github.com/andreasgoethals/CreditICL, MIT license; found 2026-10-13) | Adds a credit PD prior to TabICLv2 and sweeps credit_fraction ∈ {0, 0.5, 1}; **direct competitor**, no results yet | Only 3 ratios, no training-budget dimension, no law |
+| KnowsTFM, arXiv 2606.30258 | Knowledge-graph attention bias at fine-tuning: small models 0.741 → 0.768; large models get worse with any fine-tuning (TabPFN v2.6: 0.892 → 0.862) | Fine-tuning, not a prior; biomedical domain |
 
-### 7.4 LLM 的 data mixing law
+### 7.4 LLM data mixing laws
 
-| 论文 | 要点 |
+| Paper | Key point |
 |---|---|
-| Ye et al.（复旦 / 上海 AI Lab），ICLR 2025，arXiv 2403.16952 | L_i(r) = c_i + k_i·exp(Σ_j t_ij·r_j)；用 70M 到 410M 的小模型跑约 20 种比例，串联步数和模型大小的 scaling law，外推到 1B / 100B token；优化后的比例相当于默认比例多训 48% 的步数；能预测继续预训练时要保留多少旧数据 |
-| Apple（Shukor et al.），NeurIPS 2025，arXiv 2507.09404 | 一个公式同时管混合比例、模型大小、数据量；约 10 到 20 次训练；外推误差 LLM 约 1% 到 2%；假设数据不重复（我们的 prior 正好满足） |
-| Explaining Data Mixing Scaling Laws（Dai, Zheng），ICML 2026 workshop | 解释为什么成立：模型容量固定，各领域抢容量。只读了摘要 |
-| 专才 vs 通才 | 文本上通才多数赢（BloombergGPT vs GPT-4）；视网膜上专才小胜；PPG 上专才 +27%。表格：未知 |
+| Ye et al. (Fudan / Shanghai AI Lab), ICLR 2025, arXiv 2403.16952 | L_i(r) = c_i + k_i·exp(Σ_j t_ij·r_j); about 20 mixtures on 70M to 410M models, chained with step and size scaling laws to extrapolate to 1B / 100B tokens; the optimized mixture equals the default trained for 48% more steps; predicts how much old data to keep in continued pretraining |
+| Apple (Shukor et al.), NeurIPS 2025, arXiv 2507.09404 | One formula over mixture, model size and data size; about 10 to 20 runs; extrapolation error about 1% to 2% for LLMs; assumes no data repetition (which our priors satisfy) |
+| Explaining Data Mixing Scaling Laws (Dai, Zheng), ICML 2026 workshop | Why the laws hold: with fixed capacity, domains compete for it. Abstract only |
+| Specialist vs generalist | Text: the generalist mostly wins (BloombergGPT vs GPT-4); retina: the specialist wins narrowly; PPG: the specialist +27%. Tables: unknown |
 
-## 8. 相关文件
+## 8. Related files
 
-| 文件 | 在哪 |
+| File | Where |
 |---|---|
-| RQ1 实验说明 | [EXPERIMENTS.md](EXPERIMENTS.md) |
-| 给 Bo 讲的 deck（21 页） | `TFM_Prior_deck.pptx`（repo 根目录，不进 git，因为是 BMO 内部材料） |
-| 讲稿 | `Bo_meeting_script.md / .pdf`（Jerry 手上） |
-| handoff 文档 | claude.ai 项目 "Research & Product" 里的 `TFM prior handoff` |
-| Reading list | 见第 7 节开头的链接 |
+| Experiment details | [EXPERIMENTS.md](EXPERIMENTS.md) |
+| Deck for Bo (21 slides) | `TFM_Prior_deck.pptx` (repo root, never in git: BMO internal material) |
+| Talking script | `Bo_meeting_script.md / .pdf` (Jerry has it) |
+| Handoff document | `TFM prior handoff` in the claude.ai project "Research & Product" |
+| Reading list | Link at the top of section 7 |
