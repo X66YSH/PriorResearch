@@ -1,108 +1,66 @@
-# nanoTabPFN
+# tfm-prior-mixing
 
-Train your own small TabPFN in less than 500 LOC and a few minutes.
+研究在预训练 tabular foundation model（nanoTabPFN）时，把领域 prior（比如金融）和通用 prior（TabICLv2 的 graph_scm）按比例混合，对真实表格的成绩有什么影响，以及这个影响能否用公式预测。研究背景和进展见 [docs/RESEARCH.md](docs/RESEARCH.md)，实验设计和所有结果见 [docs/EXPERIMENTS.md](docs/EXPERIMENTS.md)。
 
-The purpose of this repository is to be a good starting point for students and researchers that are interested in learning about how TabPFN works under the hood.
+## 1. 安装
 
-Clone the repository, afterwards install dependencies via:
-```
-pip install numpy torch schedulefree h5py scikit-learn openml seaborn
-```
-
-### Our Code
-
-- `model.py` contains the implementation of the architecture and a sklearn-like interface in less than 200 lines of code. 
-- `train.py` implements a simple training loop and prior dump data loader in under 200 lines
-- `experiment.ipynb` will recreate the experiment from the [paper](https://arxiv.org/pdf/2511.03634) (requires `pip install tabpfn==2.2.1`)
-
-
-### Pretrain your own nanoTabPFN
-
-To pretrain your own nanoTabPFN, you need to first download a prior data dump from [here](https://figshare.com/s/63fc1ada93e42e388e63), then run `train.py`.
+Python 3.11。推荐用 [uv](https://docs.astral.sh/uv/)：
 
 ```bash
-cd nanoTabPFN
-
-# download data dump
-curl -L -o 300k_150x5_2.h5 "https://ndownloader.figshare.com/files/58932628?private_link=63fc1ada93e42e388e63"
-
-python train.py
+uv sync                      # 按 uv.lock 装依赖和本项目（src/tfmprior）
+source .venv/bin/activate
 ```
 
-#### Step by Step explanation:
+没有 uv 的机器（比如 SageMaker）：
 
-First we import our code from model.py and train.py
-```py
-from model import NanoTabPFNModel
-from model import NanoTabPFNClassifier
-from train import PriorDumpDataLoader
-from train import train, get_default_device
-```
-Then we instantiate our model
-```py
-model = NanoTabPFNModel(
-    embedding_size=96,
-    num_attention_heads=4,
-    mlp_hidden_size=192,
-    num_layers=3,
-    num_outputs=2
-)
-```
-and our dataloader
-```py
-prior = PriorDumpDataLoader(
-    "300k_150x5_2.h5",
-    num_steps=2500,
-    batch_size=32,
-)
-```
-Now we can train our model:
-```py
-device = get_default_device()
-model, _ = train(
-    model,
-    prior,
-    lr = 4e-3,
-    device = device
-)
-```
-and finally we can instantiate our classifier:
-```py
-clf = NanoTabPFNClassifier(model, device)
-```
-and use its `.fit`, `.predict` and `.predict_proba`:
-```py
-from sklearn.datasets import load_breast_cancer
-from sklearn.metrics import roc_auc_score, accuracy_score
-from sklearn.model_selection import train_test_split
-
-X, y = load_breast_cancer(return_X_y=True)
-X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.5)
-
-clf.fit(X_train, y_train)
-prob = clf.predict_proba(X_test)
-pred = clf.predict(X_test)
-print('ROC AUC', roc_auc_score(y_test, prob))
-print('Accuracy', accuracy_score(y_test, pred))
+```bash
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt && pip install -e . --no-deps
 ```
 
-### TFM-Playground
+## 2. 冒烟测试（不需要任何数据，约 2 分钟）
 
-The nanoTabPFN repository is supposed to stay ultra small and simple, but we created another repository,
-the [TFM-Playground](https://github.com/automl/TFM-Playground/) which we are building out to have a lot more features,
-like regression, multiple prior interfaces, multiple architectures, ensembling of different pre-processings and more,
-so check it out if you are interested!
+```bash
+pytest
+```
 
-### Paper
+测试会自己造几十张表的小题库，在 CPU 上跑通训练、存档、评估，并检查几条关键性质（题库可复现、抽题比例、存档用的是 schedule-free 的评估参数等）。评估部分需要考卷缓存，没有时那一项会跳过。
 
-Check out our [paper](https://arxiv.org/pdf/2511.03634).
-Please use the following BibTex to cite:
+## 3. 准备数据
+
+```bash
+python scripts/make_dump.py --all --workers 8     # 题库，写到 artifacts/dumps/；Mac 上约 10 分钟
+python scripts/make_dump.py --verify              # 和 artifacts/checksums.json 里的参考校验值对比
+python scripts/evaluate.py --baselines            # 第一次运行时从 OpenML 下载考卷到 artifacts/benchmark_cache/
+```
+
+## 4. 跑一个实验
+
+一个实验 = `configs/experiments/` 里的一个文件，在 `configs/base.yaml` 的基础上改设置：
+
+```bash
+python scripts/train.py --config configs/experiments/smoke.yaml              # 小模型，10 步，几分钟
+python scripts/train.py --config configs/experiments/smoke.yaml --list       # 只列出会跑哪些 run
+python scripts/train.py --config configs/experiments/smoke.yaml train.steps=20 --overwrite   # 命令行覆盖设置
+```
+
+每个 run 一个目录 `runs/<实验名>/<run 名>/`，里面有完整配置、git commit、环境、训练日志、checkpoint 和评估结果，详见 [src/tfmprior/run.py](src/tfmprior/run.py) 开头的说明。目录已存在时会报错，`--resume` 跳过已完成的 run，`--overwrite` 重跑。
+
+## 5. 结构
 
 ```
-@article{pfefferle2025nanotabpfn,
-  title={nanoTabPFN: A Lightweight and Educational Reimplementation of TabPFN},
-  author={Pfefferle, Alexander and Hog, Johannes and Purucker, Lennart and Hutter, Frank},
-  journal={arXiv preprint arXiv:2511.03634},
-  year={2025}
-}
+configs/          base.yaml 和每个实验的配置
+src/tfmprior/     库代码：priors/、data/（造题库、按比例抽题）、model/、train/、eval/、utils/
+scripts/          入口：make_dump.py、train.py、evaluate.py、verify_golden.py、diagnostics/
+tests/            pytest
+golden/           重构前记录的标准答案，scripts/verify_golden.py 用它检查结果没有变
+docs/             RESEARCH.md、EXPERIMENTS.md
+artifacts/        checksums.json 进 git；dumps/、benchmark_cache/ 不进 git
+upstream_nanotabpfn/   原版 nanoTabPFN 的 README 和 notebook，仅供参考
 ```
+
+## 6. 来源和许可
+
+- nanoTabPFN（Pfefferle et al., 2025）：模型和训练循环的原始代码，见 [LICENSE](LICENSE) 和 [CITATION.bib](CITATION.bib)
+- TabICL（BSD-3）：通用 prior，作为依赖安装
+- FinTFM（Apache-2.0）：金融 prior，原样复制在 `src/tfmprior/priors/_fintfm_financial.py`，文件头写明来源 commit

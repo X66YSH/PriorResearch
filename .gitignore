@@ -1,7 +1,19 @@
 __pycache__/
-*.pth
+.pytest_cache/
+.venv/
+
+# data and outputs: never in git
 *.h5
-benchmark/cache/
+*.pth
+*.pt
+artifacts/dumps/
+artifacts/benchmark_cache/
+runs/
+runs_golden_check/
+legacy_results/
+checkpoints/
 results/
 logs/
+
+# BMO internal material
 *.pptx

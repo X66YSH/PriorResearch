@@ -1,6 +1,8 @@
-# RQ1 实验说明：金融 prior 和通用 prior 的取舍曲线
+# 实验说明
 
-最后更新：2026-10-11。状态标记：✅ 已实现并测过，🟡 已实现但待验证，⬜ 未实现。
+最后更新：2026-10-13（Phase A 重构）。状态标记：✅ 已实现并测过，🟡 已实现但待验证，⬜ 未实现。
+
+**关于文件路径：** 第 2 到 5 节是重构前写的，里面的文件路径（`priors/`、`train_mixed.py`、`checkpoints/` 等）是当时的位置。重构后的对应关系见第 1 节；重构前的输出都移到了 `legacy_results/`（不进 git）。
 
 ## 0. 要回答的问题
 
@@ -8,27 +10,27 @@
 
 做法：每个 r 训一个 nanoTabPFN，在两套考卷上测，画出两条曲线（x 轴 r，y 轴 AUC / ECE / Brier）。
 
-## 1. 整体流程和对应的代码
+2026-10-12 之后研究重心改为：领域 prior 的价值怎样随训练量和通用 prior 的强弱变化（见 [RESEARCH.md](RESEARCH.md)）。
+
+## 1. 整体流程和对应的代码（2026-10-13 重构后）
 
 ```
-通用 prior (TabICLv2) ─ make_prior_dump.py ─ 通用题库 10 万张 ─┐
-                                                              ├─ DumpMixedDataLoader(r) ─ train() ─ checkpoint ─ evaluate.py ─ plot_curves.py
-金融 prior (FinTFM)   ─ make_prior_dump.py ─ 金融题库 10 万张 ─┘   按 r 抽题、填 NaN、切分                    两套考卷        取舍曲线
-        ✅                      ✅                    ✅                       ✅                  🟡                  ✅              ✅
-                                                        一键跑全部：run_grid.py ✅
+prior (priors/registry.py) ─ scripts/make_dump.py ─ 题库 artifacts/dumps/*.h5 ─┐
+                                                                               ├─ PoolMixtureLoader(mixture) ─ train() ─ runs/<实验>/<run>/
+                                         configs/base.yaml + experiments/*.yaml ┘   按比例抽题、填 NaN、切分        存档、合成验证集、两套考卷
 ```
-（2026-10-11 之前是训练时现场造题：`MixedPrior` 加 `MixedPriorDataLoader`，现在用 `--on_the_fly` 仍可切回。）
 
 | 步骤 | 文件 | 运行方式 |
 |---|---|---|
-| 造题 | [priors/mixture.py](priors/mixture.py)、[priors/fintfm_financial.py](priors/fintfm_financial.py) | 被造题库的脚本调用 |
-| 造题库 | [make_prior_dump.py](make_prior_dump.py) | `python make_prior_dump.py --prior generic --n_tables 100000`（金融用 `--prior finance`） |
-| 按 r 抽题、拼 batch | [priors/batching.py](priors/batching.py) `DumpMixedDataLoader` | 被训练脚本调用 |
-| 训练一个模型 | [train_mixed.py](train_mixed.py)（调用 [train.py](train.py) 的 `train()`） | `python train_mixed.py --r 0.3 --seed 0 --steps 3000 --batch_size 8` |
-| 考卷 | [benchmark/datasets.py](benchmark/datasets.py)、[benchmark/metrics.py](benchmark/metrics.py) | 被评估脚本调用 |
-| 评估 | [evaluate.py](evaluate.py) | `python evaluate.py checkpoints/*.pth --baselines` |
-| 画曲线 | [plot_curves.py](plot_curves.py) | `python plot_curves.py` |
-| 跑完整网格 | [run_grid.py](run_grid.py) | `python run_grid.py --steps 3000 --batch_size 8 --lr 1e-3 --out_dir checkpoints/lr1e-3`，结果在 `results/lr1e-3/` |
+| prior | `src/tfmprior/priors/`：`generic.py`（graph_scm、mix_scm）、`fintfm.py`、`registry.py` | 被造题库调用 |
+| 造题库 | `src/tfmprior/data/dump.py`、[scripts/make_dump.py](../scripts/make_dump.py) | `python scripts/make_dump.py --all` |
+| 按比例抽题、拼 batch | `src/tfmprior/data/loader.py` 的 `PoolMixtureLoader` | 被训练调用 |
+| 训练 | `src/tfmprior/train/loop.py`、`src/tfmprior/run.py`、[scripts/train.py](../scripts/train.py) | `python scripts/train.py --config configs/experiments/<实验>.yaml` |
+| 考卷和评估 | `src/tfmprior/eval/`：`benchmarks.py`、`metrics.py`、`evaluate.py`、`synthetic.py`、`health.py` | 训练结束自动评估；`python scripts/evaluate.py <run 目录>` |
+| 标准答案 | `golden/`、[scripts/verify_golden.py](../scripts/verify_golden.py) | `python scripts/verify_golden.py --device mps` |
+| 诊断 | `scripts/diagnostics/`：`prior_stats.py`、`prior_learnability.py`、`format_check.py` | |
+
+旧文件和新位置的对应：`priors/mixture.py` 的 `GenericPrior` → `priors/generic.py`；`priors/batching.py` 的 `DumpMixedDataLoader` → `data/loader.py` 的 `PoolMixtureLoader`（`impute_with_train_mean` → `data/preprocess.py`）；`train.py` 的 `train()` → `train/loop.py`；`train_mixed.py`、`run_grid.py` → `scripts/train.py`（并行的 `sweep.py` 在 Phase C）；`benchmark/` → `eval/benchmarks.py`、`eval/metrics.py`；`evaluate.py` → `eval/evaluate.py`、`scripts/evaluate.py`；`make_prior_dump.py` → `data/dump.py`、`scripts/make_dump.py`；`check_priors.py` → `scripts/diagnostics/prior_stats.py`；`prior_dumps/` → `artifacts/dumps/`；`benchmark/cache/` → `artifacts/benchmark_cache/`。
 
 ## 2. 造题和训练
 
@@ -275,46 +277,15 @@ batch 32、学习率 4e-3、3000 步、seed 0，r = 0 / 0.3 / 0.5 / 0.7 / 1（�
 7. 先验证学习率（4e-3 vs 1e-3，r = 0，各 3 个 seed，1000 步），再跑正式实验
 8. 正式实验用学习率 1e-3（4.5）
 
+**2026-10-13 追加：**
+
+9. batch 32 下用回原版学习率 4e-3（Colab 上 3 个 seed 都稳定，见 RESEARCH.md 2026-10-11 晚上的日志）；8 号决定只适用于 batch 8
+10. 按 Jerry 的任务说明重构 repo（Phase A），之后准备 E1 到 E6（Phase B），在公司 SageMaker 上跑（Phase C）
+
 ## 6. 待决定
 
-1. **4 个"银行但非信贷"的数据集**（第 3 节）放哪边？现在两边都不放。
-3. **转到 GPU**（Jerry 有 GPU，2026-10-11）：先在 GPU 上验证 batch 32 下的学习率和训练噪声，再定步数和 seed 数，见 [RUN_ON_GPU.md](RUN_ON_GPU.md)。
+1. **4 个"银行但非信贷"的数据集**（第 3 节）：Phase B 里作为第三套考卷 `near_domain`。
 
 ## 7. 文件清单
 
-```
-EXPERIMENT.md               本文件
-priors/
-  fintfm_financial.py       金融 prior（FinTFM 原样复制）
-  _task.py                  金融 prior 需要的数据类
-  mixture.py                GenericPrior / FinancePrior / MixedPrior(r)
-  batching.py               impute_with_train_mean / MixedPriorDataLoader
-benchmark/
-  datasets.py               两套考卷的数据集清单和抽样流程
-  metrics.py                AUC / ECE / Brier
-  cache/                    抽好的考卷（不进 git）
-train_mixed.py              训练一个模型
-train.py                    原版训练循环（改了 2 处，见 2.4）
-model.py                    原版 nanoTabPFN 模型（未改）
-evaluate.py                 在两套考卷上评估
-plot_curves.py              画取舍曲线
-run_grid.py                 跑完整的 7 个 r 乘 3 个 seed
-check_priors.py             对比两个 prior 的输出
-make_prior_dump.py          造题库
-prior_dumps/                两个题库和两个健康检查用的小题库（.h5，不进 git）
-rq1_gpu.ipynb               GPU 上一步一步跑的 notebook，结果写进 results/gpu_report.txt
-build_notebook.py           生成 rq1_gpu.ipynb
-RUN_ON_GPU.md               GPU 上怎么跑
-requirements-gpu.txt        GPU 上的依赖
-diagnostics/
-  prior_learnability.py     4.1
-  table_size.py             4.3、方案 (a)
-  lr_stability.py           4.5
-  format_check.py           4.6
-  checkpoint_health.py      4.7
-checkpoints/                训练好的模型（不进 git）
-results/                    评估结果 json（不进 git）
-logs/                       训练日志（不进 git）
-```
-
-依赖：`uv add` 加了 `tabicl` 和 `xgboost`（见 [pyproject.toml](pyproject.toml)）。
+见第 1 节和 [README](../README.md) 的"结构"一节。
