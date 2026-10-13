@@ -1,0 +1,728 @@
+{
+ "checkpoint": "checkpoints/bs32_lr0.004_steps3000/r0.00_seed0.pth",
+ "device": "mps",
+ "model": {
+  "finance/polish_companies_bankruptcy/0": {
+   "auc": 0.8821195144724556,
+   "ece": 0.027803217784821754,
+   "brier": 0.04919413162376863
+  },
+  "finance/polish_companies_bankruptcy/1": {
+   "auc": 0.8139589169000934,
+   "ece": 0.015130748128285632,
+   "brier": 0.05535701302957118
+  },
+  "finance/polish_companies_bankruptcy/2": {
+   "auc": 0.8277310924369747,
+   "ece": 0.013413754524663094,
+   "brier": 0.049996280128129664
+  },
+  "finance/taiwanese_bankruptcy_prediction/0": {
+   "auc": 0.8513104838709677,
+   "ece": 0.009176134926747183,
+   "brier": 0.028392983064690954
+  },
+  "finance/taiwanese_bankruptcy_prediction/1": {
+   "auc": 0.9314516129032259,
+   "ece": 0.018991151782756788,
+   "brier": 0.02652535358171791
+  },
+  "finance/taiwanese_bankruptcy_prediction/2": {
+   "auc": 0.9778225806451614,
+   "ece": 0.022464475998276612,
+   "brier": 0.01960355024169285
+  },
+  "finance/credit-g/0": {
+   "auc": 0.7314808096931003,
+   "ece": 0.051160157308913726,
+   "brier": 0.18185997880629456
+  },
+  "finance/credit-g/1": {
+   "auc": 0.7825582238990059,
+   "ece": 0.08267699857242407,
+   "brier": 0.1754493950230333
+  },
+  "finance/credit-g/2": {
+   "auc": 0.7578176013930203,
+   "ece": 0.0689163696952164,
+   "brier": 0.1800757776295852
+  },
+  "finance/credit_card_clients_default/0": {
+   "auc": 0.6999911839901262,
+   "ece": 0.036548409902025014,
+   "brier": 0.1429533490504913
+  },
+  "finance/credit_card_clients_default/1": {
+   "auc": 0.781980075817685,
+   "ece": 0.056608839688124135,
+   "brier": 0.13790225409111903
+  },
+  "finance/credit_card_clients_default/2": {
+   "auc": 0.796438332010932,
+   "ece": 0.045205098023870946,
+   "brier": 0.12339704717912638
+  },
+  "finance/GiveMeSomeCredit/0": {
+   "auc": 0.8038395274427763,
+   "ece": 0.014171083865221592,
+   "brier": 0.058037182137971
+  },
+  "finance/GiveMeSomeCredit/1": {
+   "auc": 0.8252522766428747,
+   "ece": 0.02042594494560035,
+   "brier": 0.056847424392785874
+  },
+  "finance/GiveMeSomeCredit/2": {
+   "auc": 0.8791533349741569,
+   "ece": 0.0400690396054415,
+   "brier": 0.04731003287139619
+  },
+  "finance/heloc/0": {
+   "auc": 0.7551688279911916,
+   "ece": 0.07027378561906518,
+   "brier": 0.20105354334202102
+  },
+  "finance/heloc/1": {
+   "auc": 0.7036334719843406,
+   "ece": 0.06595041201217099,
+   "brier": 0.21872230377181337
+  },
+  "finance/heloc/2": {
+   "auc": 0.7538842671886469,
+   "ece": 0.05675353034166619,
+   "brier": 0.201031798839912
+  },
+  "finance/Is-this-a-good-customer/0": {
+   "auc": 0.6030685097979644,
+   "ece": 0.011050580389564867,
+   "brier": 0.1000129125497141
+  },
+  "finance/Is-this-a-good-customer/1": {
+   "auc": 0.5221023849308826,
+   "ece": 0.014121356623945761,
+   "brier": 0.10052468686317353
+  },
+  "finance/Is-this-a-good-customer/2": {
+   "auc": 0.7113777912805712,
+   "ece": 0.017162514792289602,
+   "brier": 0.09748480436684558
+  },
+  "general/Amazon_employee_access/0": {
+   "auc": 0.6782849239280775,
+   "ece": 0.032105939229950274,
+   "brier": 0.0535221931772011
+  },
+  "general/Amazon_employee_access/1": {
+   "auc": 0.5643153526970955,
+   "ece": 0.008134051226079447,
+   "brier": 0.05556571496036594
+  },
+  "general/Amazon_employee_access/2": {
+   "auc": 0.4865836791147995,
+   "ece": 0.005496379104442859,
+   "brier": 0.05757685638910906
+  },
+  "general/Bioresponse/0": {
+   "auc": 0.6054848428949149,
+   "ece": 0.03385224030353127,
+   "brier": 0.24264703656629522
+  },
+  "general/Bioresponse/1": {
+   "auc": 0.4383570067023304,
+   "ece": 0.02169706427957867,
+   "brier": 0.2520712889542613
+  },
+  "general/Bioresponse/2": {
+   "auc": 0.6278361925843939,
+   "ece": 0.05719995521940292,
+   "brier": 0.2383451149823677
+  },
+  "general/Diabetes130US/0": {
+   "auc": 0.5103564097779436,
+   "ece": 0.020003997007734142,
+   "brier": 0.08515678022584887
+  },
+  "general/Diabetes130US/1": {
+   "auc": 0.38962493002425824,
+   "ece": 0.020243527469574474,
+   "brier": 0.082623833396003
+  },
+  "general/Diabetes130US/2": {
+   "auc": 0.42060085836909866,
+   "ece": 0.02328489697538317,
+   "brier": 0.08284836855818259
+  },
+  "general/E-CommereShippingData/0": {
+   "auc": 0.7238403451995685,
+   "ece": 0.03616317478008569,
+   "brier": 0.19435696290917953
+  },
+  "general/E-CommereShippingData/1": {
+   "auc": 0.7803794657021383,
+   "ece": 0.054386132862418876,
+   "brier": 0.17139101561482506
+  },
+  "general/E-CommereShippingData/2": {
+   "auc": 0.689447299955581,
+   "ece": 0.06612908048555259,
+   "brier": 0.19363021085081106
+  },
+  "general/Fitness_Club/0": {
+   "auc": 0.757092069941232,
+   "ece": 0.06347331318829673,
+   "brier": 0.17083921264013138
+  },
+  "general/Fitness_Club/1": {
+   "auc": 0.8026554451135456,
+   "ece": 0.06434928873204626,
+   "brier": 0.1586304476523207
+  },
+  "general/Fitness_Club/2": {
+   "auc": 0.7853877965609808,
+   "ece": 0.07127810013480484,
+   "brier": 0.1616052738507484
+  },
+  "general/HR_Analytics_Job_Change_of_Data_Scientists/0": {
+   "auc": 0.7265625,
+   "ece": 0.061742792080622166,
+   "brier": 0.15463154887421288
+  },
+  "general/HR_Analytics_Job_Change_of_Data_Scientists/1": {
+   "auc": 0.8213704427083334,
+   "ece": 0.07052243688667659,
+   "brier": 0.14264153753159786
+  },
+  "general/HR_Analytics_Job_Change_of_Data_Scientists/2": {
+   "auc": 0.7152506510416667,
+   "ece": 0.04961120750522241,
+   "brier": 0.16577229603906196
+  },
+  "general/NATICUSdroid/0": {
+   "auc": 0.9284136546184738,
+   "ece": 0.04695484829153428,
+   "brier": 0.09972162842338439
+  },
+  "general/NATICUSdroid/1": {
+   "auc": 0.8120816599732262,
+   "ece": 0.06251610899198567,
+   "brier": 0.1615656294660754
+  },
+  "general/NATICUSdroid/2": {
+   "auc": 0.8683734939759037,
+   "ece": 0.07830574570107271,
+   "brier": 0.13387466333207862
+  },
+  "general/blood-transfusion-service-center/0": {
+   "auc": 0.7003362757461118,
+   "ece": 0.057732140048756264,
+   "brier": 0.16380243513920054
+  },
+  "general/blood-transfusion-service-center/1": {
+   "auc": 0.6963009667927701,
+   "ece": 0.05531475525640418,
+   "brier": 0.16907329758804707
+  },
+  "general/blood-transfusion-service-center/2": {
+   "auc": 0.6779319041614125,
+   "ece": 0.05038847986725159,
+   "brier": 0.16793448952758544
+  },
+  "general/churn/0": {
+   "auc": 0.8722222222222222,
+   "ece": 0.060941356656257994,
+   "brier": 0.08598330523180575
+  },
+  "general/churn/1": {
+   "auc": 0.8359848484848484,
+   "ece": 0.06664347970945528,
+   "brier": 0.08502388371630445
+  },
+  "general/churn/2": {
+   "auc": 0.8492424242424242,
+   "ece": 0.054620763708953746,
+   "brier": 0.09811587169899705
+  },
+  "general/customer_satisfaction_in_airline/0": {
+   "auc": 0.9286945812807881,
+   "ece": 0.02998835968173807,
+   "brier": 0.10370236953823442
+  },
+  "general/customer_satisfaction_in_airline/1": {
+   "auc": 0.9088054187192118,
+   "ece": 0.04426798508211503,
+   "brier": 0.12181738495512505
+  },
+  "general/customer_satisfaction_in_airline/2": {
+   "auc": 0.9096059113300493,
+   "ece": 0.034750968217849704,
+   "brier": 0.1194482998520332
+  },
+  "general/diabetes/0": {
+   "auc": 0.8204265626051269,
+   "ece": 0.05533526107319631,
+   "brier": 0.15962416442296518
+  },
+  "general/diabetes/1": {
+   "auc": 0.824934400861199,
+   "ece": 0.0811908347241115,
+   "brier": 0.15865071045319146
+  },
+  "general/diabetes/2": {
+   "auc": 0.8198210320931172,
+   "ece": 0.06411261479661334,
+   "brier": 0.16127221497146688
+  },
+  "general/hazelnut-spread-contaminant-detection/0": {
+   "auc": 0.89251708984375,
+   "ece": 0.07647131686826472,
+   "brier": 0.1357526956019212
+  },
+  "general/hazelnut-spread-contaminant-detection/1": {
+   "auc": 0.87213134765625,
+   "ece": 0.06763725401469856,
+   "brier": 0.1407395880761412
+  },
+  "general/hazelnut-spread-contaminant-detection/2": {
+   "auc": 0.88226318359375,
+   "ece": 0.056541239358921316,
+   "brier": 0.14175448064624757
+  },
+  "general/in_vehicle_coupon_recommendation/0": {
+   "auc": 0.6074719800747198,
+   "ece": 0.008403347805142427,
+   "brier": 0.2424888204188994
+  },
+  "general/in_vehicle_coupon_recommendation/1": {
+   "auc": 0.5793275217932752,
+   "ece": 0.012251023901626506,
+   "brier": 0.24322550195489756
+  },
+  "general/in_vehicle_coupon_recommendation/2": {
+   "auc": 0.5938978829389789,
+   "ece": 0.012786406325176289,
+   "brier": 0.24268387215236942
+  },
+  "general/jm1/0": {
+   "auc": 0.6987378640776698,
+   "ece": 0.03581506427144632,
+   "brier": 0.13252882573910596
+  },
+  "general/jm1/1": {
+   "auc": 0.648252427184466,
+   "ece": 0.050146786757977665,
+   "brier": 0.15245680673110046
+  },
+  "general/jm1/2": {
+   "auc": 0.6276699029126214,
+   "ece": 0.043713863706216216,
+   "brier": 0.14443521618775793
+  },
+  "general/online_shoppers_intention/0": {
+   "auc": 0.8908564814814816,
+   "ece": 0.022508415444463026,
+   "brier": 0.080627283929114
+  },
+  "general/online_shoppers_intention/1": {
+   "auc": 0.916087962962963,
+   "ece": 0.05639251797038014,
+   "brier": 0.07832546275516156
+  },
+  "general/online_shoppers_intention/2": {
+   "auc": 0.8266203703703704,
+   "ece": 0.05683927799691446,
+   "brier": 0.09747979078008878
+  },
+  "general/qsar-biodeg/0": {
+   "auc": 0.9156634746922024,
+   "ece": 0.040625632607770974,
+   "brier": 0.106955583704681
+  },
+  "general/qsar-biodeg/1": {
+   "auc": 0.8649110807113544,
+   "ece": 0.06170725286210654,
+   "brier": 0.13438673424897868
+  },
+  "general/qsar-biodeg/2": {
+   "auc": 0.9038987688098495,
+   "ece": 0.027971733277809104,
+   "brier": 0.11454179035100906
+  },
+  "general/seismic-bumps/0": {
+   "auc": 0.6729017967019444,
+   "ece": 0.024097622736007903,
+   "brier": 0.053407928054748574
+  },
+  "general/seismic-bumps/1": {
+   "auc": 0.5397489539748954,
+   "ece": 0.01679478329606354,
+   "brier": 0.06282890190368803
+  },
+  "general/seismic-bumps/2": {
+   "auc": 0.7428008860447944,
+   "ece": 0.014508005915558902,
+   "brier": 0.05966038941743683
+  }
+ },
+ "random_forest": {
+  "finance/polish_companies_bankruptcy/0": {
+   "auc": 0.8639122315592904,
+   "ece": 0.0398828125,
+   "brier": 0.050664453125
+  },
+  "finance/polish_companies_bankruptcy/1": {
+   "auc": 0.8066059757236228,
+   "ece": 0.018632812499999995,
+   "brier": 0.055757812500000004
+  },
+  "finance/polish_companies_bankruptcy/2": {
+   "auc": 0.8249299719887957,
+   "ece": 0.03550781249999999,
+   "brier": 0.0501775390625
+  },
+  "finance/taiwanese_bankruptcy_prediction/0": {
+   "auc": 0.8656754032258065,
+   "ece": 0.017382812499999997,
+   "brier": 0.026105468750000006
+  },
+  "finance/taiwanese_bankruptcy_prediction/1": {
+   "auc": 0.936491935483871,
+   "ece": 0.012558593750000001,
+   "brier": 0.02564091796875
+  },
+  "finance/taiwanese_bankruptcy_prediction/2": {
+   "auc": 0.9705141129032258,
+   "ece": 0.01111328125,
+   "brier": 0.02008369140625
+  },
+  "finance/credit-g/0": {
+   "auc": 0.7120002902125807,
+   "ece": 0.04009765625000003,
+   "brier": 0.18577822265625
+  },
+  "finance/credit-g/1": {
+   "auc": 0.7803453529710512,
+   "ece": 0.05376953124999997,
+   "brier": 0.16970068359375
+  },
+  "finance/credit-g/2": {
+   "auc": 0.7689182326053834,
+   "ece": 0.07988281250000001,
+   "brier": 0.17126484375
+  },
+  "finance/credit_card_clients_default/0": {
+   "auc": 0.7363572247200918,
+   "ece": 0.04476562500000002,
+   "brier": 0.1455791015625
+  },
+  "finance/credit_card_clients_default/1": {
+   "auc": 0.8009785770960064,
+   "ece": 0.05748046874999999,
+   "brier": 0.14173681640625002
+  },
+  "finance/credit_card_clients_default/2": {
+   "auc": 0.7826853566075993,
+   "ece": 0.05822265624999999,
+   "brier": 0.13345029296875
+  },
+  "finance/GiveMeSomeCredit/0": {
+   "auc": 0.8289441299532365,
+   "ece": 0.027988281249999993,
+   "brier": 0.05885927734375
+  },
+  "finance/GiveMeSomeCredit/1": {
+   "auc": 0.793133152842727,
+   "ece": 0.03808593749999999,
+   "brier": 0.0612125
+  },
+  "finance/GiveMeSomeCredit/2": {
+   "auc": 0.8395274427762737,
+   "ece": 0.0323828125,
+   "brier": 0.044670898437499995
+  },
+  "finance/heloc/0": {
+   "auc": 0.7623868363102521,
+   "ece": 0.06934943857122859,
+   "brier": 0.19702549093495794
+  },
+  "finance/heloc/1": {
+   "auc": 0.7097198434059213,
+   "ece": 0.0786061271354493,
+   "brier": 0.21884673955697137
+  },
+  "finance/heloc/2": {
+   "auc": 0.7466356740885735,
+   "ece": 0.055067627719801386,
+   "brier": 0.19902229454095738
+  },
+  "finance/Is-this-a-good-customer/0": {
+   "auc": 0.6647425186085372,
+   "ece": 0.032753906250000006,
+   "brier": 0.10208271484374999
+  },
+  "finance/Is-this-a-good-customer/1": {
+   "auc": 0.5138234847334042,
+   "ece": 0.0713671875,
+   "brier": 0.1060744140625
+  },
+  "finance/Is-this-a-good-customer/2": {
+   "auc": 0.6529697706212974,
+   "ece": 0.044277343749999996,
+   "brier": 0.10123173828125
+  },
+  "general/Amazon_employee_access/0": {
+   "auc": 0.6900414937759336,
+   "ece": 0.04113281249999992,
+   "brier": 0.0526734375
+  },
+  "general/Amazon_employee_access/1": {
+   "auc": 0.539972337482711,
+   "ece": 0.044921875000000056,
+   "brier": 0.061934570312500006
+  },
+  "general/Amazon_employee_access/2": {
+   "auc": 0.5798063623789764,
+   "ece": 0.03708984375000005,
+   "brier": 0.06003349609375
+  },
+  "general/Bioresponse/0": {
+   "auc": 0.6518784972022381,
+   "ece": 0.129609375,
+   "brier": 0.240176171875
+  },
+  "general/Bioresponse/1": {
+   "auc": 0.5464551435774457,
+   "ece": 0.16490234374999999,
+   "brier": 0.27940166015625
+  },
+  "general/Bioresponse/2": {
+   "auc": 0.6554141302342742,
+   "ece": 0.09750672522379468,
+   "brier": 0.24193100486853175
+  },
+  "general/Diabetes130US/0": {
+   "auc": 0.4794737824220937,
+   "ece": 0.04509765624999999,
+   "brier": 0.08772861328125
+  },
+  "general/Diabetes130US/1": {
+   "auc": 0.4771412576973316,
+   "ece": 0.051699218750000005,
+   "brier": 0.08931064453125001
+  },
+  "general/Diabetes130US/2": {
+   "auc": 0.35202463146109353,
+   "ece": 0.08818359375000001,
+   "brier": 0.09344912109374999
+  },
+  "general/E-CommereShippingData/0": {
+   "auc": 0.6691731708864775,
+   "ece": 0.14091796875000004,
+   "brier": 0.21459931640624996
+  },
+  "general/E-CommereShippingData/1": {
+   "auc": 0.7570594580874421,
+   "ece": 0.09986328124999999,
+   "brier": 0.18690673828125
+  },
+  "general/E-CommereShippingData/2": {
+   "auc": 0.7218414874040231,
+   "ece": 0.08244140624999997,
+   "brier": 0.20104599609375
+  },
+  "general/Fitness_Club/0": {
+   "auc": 0.6941522164985852,
+   "ece": 0.09146484375,
+   "brier": 0.19604423828125
+  },
+  "general/Fitness_Club/1": {
+   "auc": 0.7713487629688747,
+   "ece": 0.07824218749999999,
+   "brier": 0.1735505859375
+  },
+  "general/Fitness_Club/2": {
+   "auc": 0.7935863019661902,
+   "ece": 0.06578125,
+   "brier": 0.16008671875
+  },
+  "general/HR_Analytics_Job_Change_of_Data_Scientists/0": {
+   "auc": 0.7522786458333334,
+   "ece": 0.08029296874999999,
+   "brier": 0.14934990234375
+  },
+  "general/HR_Analytics_Job_Change_of_Data_Scientists/1": {
+   "auc": 0.8245035807291666,
+   "ece": 0.059453124999999996,
+   "brier": 0.144415625
+  },
+  "general/HR_Analytics_Job_Change_of_Data_Scientists/2": {
+   "auc": 0.6597086588541667,
+   "ece": 0.0730078125,
+   "brier": 0.1796701171875
+  },
+  "general/NATICUSdroid/0": {
+   "auc": 0.9197791164658635,
+   "ece": 0.04454303976044435,
+   "brier": 0.10252538885221547
+  },
+  "general/NATICUSdroid/1": {
+   "auc": 0.7935408299866131,
+   "ece": 0.06483792194019196,
+   "brier": 0.1753367570845099
+  },
+  "general/NATICUSdroid/2": {
+   "auc": 0.8399263721552876,
+   "ece": 0.07118382129853347,
+   "brier": 0.15314279511027645
+  },
+  "general/blood-transfusion-service-center/0": {
+   "auc": 0.60718789407314,
+   "ece": 0.16219416522316388,
+   "brier": 0.21480629982321658
+  },
+  "general/blood-transfusion-service-center/1": {
+   "auc": 0.6223203026481714,
+   "ece": 0.14411760950105665,
+   "brier": 0.20575664958066442
+  },
+  "general/blood-transfusion-service-center/2": {
+   "auc": 0.5979403110550652,
+   "ece": 0.15161088614933182,
+   "brier": 0.21453852247184424
+  },
+  "general/churn/0": {
+   "auc": 0.895770202020202,
+   "ece": 0.05941406250000001,
+   "brier": 0.07885234375
+  },
+  "general/churn/1": {
+   "auc": 0.8754419191919192,
+   "ece": 0.050214843750000016,
+   "brier": 0.08697978515624999
+  },
+  "general/churn/2": {
+   "auc": 0.840719696969697,
+   "ece": 0.036015625,
+   "brier": 0.0882611328125
+  },
+  "general/customer_satisfaction_in_airline/0": {
+   "auc": 0.9440270935960591,
+   "ece": 0.07865234374999999,
+   "brier": 0.09878291015624999
+  },
+  "general/customer_satisfaction_in_airline/1": {
+   "auc": 0.9148399014778325,
+   "ece": 0.07287109374999998,
+   "brier": 0.12031396484375001
+  },
+  "general/customer_satisfaction_in_airline/2": {
+   "auc": 0.9418411330049261,
+   "ece": 0.09466796875000003,
+   "brier": 0.10268720703125
+  },
+  "general/diabetes/0": {
+   "auc": 0.7813025634125008,
+   "ece": 0.06126953125,
+   "brier": 0.17494482421875002
+  },
+  "general/diabetes/1": {
+   "auc": 0.8073740160129179,
+   "ece": 0.08080078125000001,
+   "brier": 0.16489951171875
+  },
+  "general/diabetes/2": {
+   "auc": 0.7979210119087667,
+   "ece": 0.05978515624999999,
+   "brier": 0.17022021484375002
+  },
+  "general/hazelnut-spread-contaminant-detection/0": {
+   "auc": 0.9166259765625,
+   "ece": 0.08052734375000002,
+   "brier": 0.11986240234375
+  },
+  "general/hazelnut-spread-contaminant-detection/1": {
+   "auc": 0.905517578125,
+   "ece": 0.04916015624999997,
+   "brier": 0.12285263671874999
+  },
+  "general/hazelnut-spread-contaminant-detection/2": {
+   "auc": 0.902862548828125,
+   "ece": 0.06281249999999998,
+   "brier": 0.12775195312499998
+  },
+  "general/in_vehicle_coupon_recommendation/0": {
+   "auc": 0.5659090909090909,
+   "ece": 0.06876953124999999,
+   "brier": 0.24752177734375
+  },
+  "general/in_vehicle_coupon_recommendation/1": {
+   "auc": 0.6138542963885429,
+   "ece": 0.0447265625,
+   "brier": 0.2333318359375
+  },
+  "general/in_vehicle_coupon_recommendation/2": {
+   "auc": 0.5782067247820672,
+   "ece": 0.03830078125000003,
+   "brier": 0.24453173828125
+  },
+  "general/jm1/0": {
+   "auc": 0.7301941747572815,
+   "ece": 0.0846723400297619,
+   "brier": 0.13789061663687646
+  },
+  "general/jm1/1": {
+   "auc": 0.5880097087378641,
+   "ece": 0.11651518885845058,
+   "brier": 0.17639217098195145
+  },
+  "general/jm1/2": {
+   "auc": 0.6699514563106794,
+   "ece": 0.08675781250000002,
+   "brier": 0.15009414062499998
+  },
+  "general/online_shoppers_intention/0": {
+   "auc": 0.874363425925926,
+   "ece": 0.03142578125,
+   "brier": 0.08681240234375
+  },
+  "general/online_shoppers_intention/1": {
+   "auc": 0.921238425925926,
+   "ece": 0.03810546875000001,
+   "brier": 0.07879072265624999
+  },
+  "general/online_shoppers_intention/2": {
+   "auc": 0.8570023148148148,
+   "ece": 0.03822265625,
+   "brier": 0.08840439453124999
+  },
+  "general/qsar-biodeg/0": {
+   "auc": 0.9209644322845416,
+   "ece": 0.06287109375,
+   "brier": 0.10491279296875
+  },
+  "general/qsar-biodeg/1": {
+   "auc": 0.8799931600547195,
+   "ece": 0.04281250000000002,
+   "brier": 0.129258984375
+  },
+  "general/qsar-biodeg/2": {
+   "auc": 0.8986662106703147,
+   "ece": 0.06277343749999999,
+   "brier": 0.12115703124999999
+  },
+  "general/seismic-bumps/0": {
+   "auc": 0.625030765444253,
+   "ece": 0.04490234375000001,
+   "brier": 0.056772753906249994
+  },
+  "general/seismic-bumps/1": {
+   "auc": 0.47464927393551565,
+   "ece": 0.06328125000000001,
+   "brier": 0.0712314453125
+  },
+  "general/seismic-bumps/2": {
+   "auc": 0.7208958897366478,
+   "ece": 0.04509765624999999,
+   "brier": 0.06578486328125
+  }
+ }
+}
