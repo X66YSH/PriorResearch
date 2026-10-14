@@ -3,7 +3,7 @@
 Tables are generated in chunks of CHUNK tables; chunk c is seeded with (seed, c), so the file content does not
 depend on the number of worker processes. Missing values stay NaN: they are imputed at training time, once the
 train/test split of the batch is known. Generating from TabICL needs a fixed PYTHONHASHSEED
-(utils.seed.ensure_fixed_hash_seed), which scripts/make_dump.py takes care of.
+(utils.seed.ensure_fixed_hash_seed), or start Python with PYTHONHASHSEED=0.
 """
 
 import hashlib

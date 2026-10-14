@@ -1,6 +1,8 @@
 __pycache__/
 .pytest_cache/
 .venv/
+.ipynb_checkpoints/
+.DS_Store
 
 # data and outputs: never in git
 *.h5
@@ -9,11 +11,6 @@ __pycache__/
 artifacts/dumps/
 artifacts/benchmark_cache/
 runs/
-runs_golden_check/
-legacy_results/
-checkpoints/
-results/
-logs/
 
 # BMO internal material
 *.pptx

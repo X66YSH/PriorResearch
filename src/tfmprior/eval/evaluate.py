@@ -29,7 +29,7 @@ def build_model(model_config: dict) -> NanoTabPFNModel:
 
 
 def load_classifier(path: str, device: str) -> NanoTabPFNClassifier:
-    """Loads a checkpoint written by scripts/train.py, or one from before the refactor (train_mixed.py)."""
+    """Loads a notebook checkpoint or a checkpoint from an earlier experiment."""
     checkpoint = torch.load(path, map_location="cpu", weights_only=False)
     if "config" in checkpoint:
         model_config = checkpoint["config"]["model"]

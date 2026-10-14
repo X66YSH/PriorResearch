@@ -78,7 +78,7 @@ class PoolMixtureLoader:
                 self.n_rows, self.max_features = f["X"].shape[1:]
             if need > size:
                 raise PoolTooSmallError(f"{name}: this run needs {need} tables but {path} holds {size}; "
-                                        f"make a pool with at least {need} tables (scripts/make_dump.py --n_tables)")
+                                        f"generate at least {need} tables with tfmprior.data.dump.make_dump")
             self.paths[name] = path
             self.order[name] = np.random.default_rng([seed, 2 + get_prior(name).stream_id]).permutation(size)
         self.position = {name: 0 for name in self.paths}

@@ -9,8 +9,6 @@ import subprocess
 import sys
 from importlib.metadata import PackageNotFoundError, version
 
-import yaml
-
 REPO_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
 
@@ -27,17 +25,12 @@ def prepare_run_dir(path: str, mode: str = "new") -> bool:
     """
     if os.path.exists(path):
         if mode == "new":
-            raise RunExistsError(f"{path} exists; pass --resume to skip finished runs or --overwrite to replace it")
+            raise RunExistsError(f"{path} exists; use mode='resume' to skip finished runs or mode='overwrite' to replace it")
         if mode == "resume" and os.path.exists(os.path.join(path, "DONE")):
             return False
         shutil.rmtree(path)
     os.makedirs(path)
     return True
-
-
-def write_yaml(path: str, obj) -> None:
-    with open(path, "w") as f:
-        yaml.safe_dump(obj, f, sort_keys=False)
 
 
 def write_json(path: str, obj) -> None:
@@ -71,7 +64,7 @@ def env_info(device: str) -> str:
 
 
 def write_provenance(run_dir: str, config: dict, device: str) -> None:
-    write_yaml(os.path.join(run_dir, "config.yaml"), config)
+    write_json(os.path.join(run_dir, "config.json"), config)
     with open(os.path.join(run_dir, "git_commit.txt"), "w") as f:
         f.write(git_info())
     with open(os.path.join(run_dir, "env.txt"), "w") as f:

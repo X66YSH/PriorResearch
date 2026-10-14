@@ -1,6 +1,6 @@
 """One run = one directory under runs/<experiment>/<run name>/:
 
-    config.yaml, git_commit.txt, env.txt   resolved config and provenance
+    config.json, git_commit.txt, env.txt   resolved config and provenance
     train_log.csv                          step, loss, share of non-base tables in the batch, seconds
     checkpoints/step_<N>.pt                schedule-free evaluation weights + config
     eval/step_<N>/synthetic.json           held-out synthetic tables + breast cancer, written when the checkpoint is saved
