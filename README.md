@@ -19,11 +19,10 @@ Open the notebook, select **PriorResearch (uv)**, then use **Restart Kernel and 
 
 ## Input data
 
-Data is excluded from Git. Cloning the repository does **not** download it. Copy these directories from the prepared machine:
+The benchmark cache is included in Git and arrives with `git clone`. The large prior pools are excluded from Git; download them from the release below or copy this directory from the prepared machine:
 
 ```text
 artifacts/dumps/
-artifacts/benchmark_cache/
 ```
 
 The notebook checks for all four pools:
@@ -45,10 +44,10 @@ cd ../..
 
 `artifacts/checksums.json` preserves the reference content checksums and pool generation settings.
 
-The benchmark cache contains 26 task files: 24 usable datasets (7 finance and 17 general), plus 2 skip markers. Each usable dataset has 3 fixed subsamples. Copy the existing cache to preserve those samples. If unavailable, rebuild it from OpenML (network required):
+The versioned benchmark cache contains 26 task files (about 1.4 MiB): 24 usable datasets (7 finance and 17 general), plus 2 skip markers. Each usable dataset has 3 fixed subsamples. Use these committed files to preserve the same evaluation samples across machines; no OpenML download is needed. If cache files are accidentally removed, restore them from the repository:
 
 ```bash
-uv run python -c 'from tfmprior.eval.benchmarks import load_suite; load_suite("finance"); load_suite("general")'
+git restore artifacts/benchmark_cache/
 ```
 
 The notebook stops when expected files are missing; it does not download them. Its cache reader assigns all non-finance files to General, so keep this directory limited to the reference tasks. The two held-out pools are not yet used for synthetic validation scoring in this notebook.

@@ -4,12 +4,11 @@ __pycache__/
 .ipynb_checkpoints/
 .DS_Store
 
-# data and outputs: never in git
+# large prior pools and training outputs: never in git
 *.h5
 *.pth
 *.pt
 artifacts/dumps/
-artifacts/benchmark_cache/
 runs/
 
 # BMO internal material
